@@ -1,8 +1,9 @@
 import type {
   User, UserId, Org, OrgId, Workspace, WorkspaceId, Library, LibraryId,
-  LibraryGrant, FileRecord, FileId, TagRecord, SavedView, ColorGroupSet,
+  LibraryGrant, FileRecord, FileId, TagId, TagRecord, SavedView, ColorGroupSet,
   GraphMode, LibraryGraph, OrgMembership, WorkspaceMembership,
 } from './types';
+import type { Overlay } from '../overlay/types';
 
 /* THE DATA BOUNDARY.
  *
@@ -26,6 +27,13 @@ export interface WorkspaceContext {
   workspace: Workspace;
   role: WorkspaceMembership['role'];
   grants: LibraryGrant[];
+  /** This workspace's corrections and albums. Passed IN rather than fetched
+   *  here, so the driver stays a pure function of its arguments and the store
+   *  behind it (cookie today, a table later) is not baked into the boundary. */
+  overlay: Overlay;
+  /** Has this workspace suppressed this tag on this file? Precomputed, because
+   *  it is asked once per tag per file on every listing. */
+  isRemoved(fileId: FileId, tagId: TagId): boolean;
   /** Effective permission: min(workspace role, grant access). */
   can(action: 'read' | 'tag' | 'manageGrants'): boolean;
 }
@@ -38,6 +46,9 @@ export interface FileQuery {
   tags?: Record<string, string[]>;
   /** Substring match on file name. */
   q?: string;
+  /** Restrict to one album's members. Albums live in the overlay, so this is
+   *  resolved against ctx rather than the catalogue. */
+  albumId?: string;
   mediaType?: string;
   limit?: number;
   cursor?: string;
@@ -83,7 +94,11 @@ export interface AthenaRepository {
   countForGrant(grant: LibraryGrant): Promise<number>;
 
   // --- catalogue ----------------------------------------------------------
-  buildContext(userId: UserId, workspaceSlug: string): Promise<WorkspaceContext | null>;
+  buildContext(
+    userId: UserId,
+    workspaceSlug: string,
+    overlay?: Overlay,
+  ): Promise<WorkspaceContext | null>;
   listFiles(ctx: WorkspaceContext, query: FileQuery): Promise<FilePage>;
   getFile(ctx: WorkspaceContext, id: FileId): Promise<FileRecord | null>;
   listTags(ctx: WorkspaceContext, libraryId?: LibraryId): Promise<TagRecord[]>;

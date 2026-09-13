@@ -13,6 +13,7 @@
     "typecheck": "tsc --noEmit",
     "seed": "tsx scripts/generate-seed.mts && tsx scripts/build-graph.mts",
     "check:taxonomy": "tsx scripts/check-taxonomy-parity.mts",
+    "icons": "tsx scripts/fetch-icons.mts",
     "verify": "node tests/verify.mjs"
   },
   "dependencies": {

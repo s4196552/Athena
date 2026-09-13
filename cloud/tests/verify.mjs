@@ -280,6 +280,112 @@ section('colour groups');
     `Marketing ${firstColor(m.body)} vs Finance ${firstColor(f.body)}`);
 }
 
+// ===========================================================================
+section('tag icons');
+// ===========================================================================
+{
+  // Material Symbols all share this viewBox, so counting it counts icons
+  // without depending on any one glyph's path data.
+  const page = await get('/w/hadesmedia-marketing/library', priya);
+  const icons = (page.body.match(/viewBox="0 -960 960 960"/g) ?? []).length;
+  check('facet chips and rows carry icons', icons > 60, `${icons} inline SVG icons`);
+  check('icons are inline, not a webfont',
+    !/fonts\.googleapis\.com|material-symbols-outlined/i.test(page.body),
+    "no Google Fonts request, so font-src stays 'self'");
+}
+
+// ===========================================================================
+section('tag corrections');
+// ===========================================================================
+{
+  /* The overlay cookie is plain text by design (lib/overlay/codec.ts), so a
+     correction can be asserted end to end without driving a browser through
+     the server action that normally writes it. */
+  const DESIGN = 14; // topic:design in the seeded vocabulary
+  const countOf = (body) =>
+    Number((body.match(/([\d,]+)\s+items?/)?.[1] ?? '0').replace(/,/g, ''));
+
+  const before = await json('/api/w/hadesmedia-marketing/graph?mode=files&topic=design', priya);
+  const victim = before.data.ids[0];
+  const overlay = `athena_ov_w_mkt=1|r!${victim}-${DESIGN.toString(36)}`;
+
+  const corrected = await json(
+    '/api/w/hadesmedia-marketing/graph?mode=files&topic=design',
+    `${priya}; ${overlay}`,
+  );
+  check('a removed tag drops the file from that filter',
+    corrected.data.files === before.data.files - 1,
+    `${before.data.files} -> ${corrected.data.files}`);
+
+  const plain = await get('/w/hadesmedia-marketing/library?topic=design', priya);
+  const fixed = await get('/w/hadesmedia-marketing/library?topic=design', `${priya}; ${overlay}`);
+  check('the facet count follows the correction',
+    countOf(fixed.body) === countOf(plain.body) - 1,
+    `${countOf(plain.body)} -> ${countOf(fixed.body)}`);
+
+  /* THE POINT OF AN OVERLAY RATHER THAN AN EDIT.
+     Studio Ops holds an UNSCOPED grant on the same library, so the very file
+     Marketing just corrected is in its selection too. If a removal were an edit
+     to the catalogue, this count would move. It must not: the tag is still
+     there, and Marketing has only stopped counting it.
+     (Finance is the wrong workspace to ask -- its grant is scoped to
+     Documents/ and _Archive/, so it never sees Marketing's files at all.) */
+  const opsPlain = await get('/w/hadesmedia-ops/library?topic=design', iris);
+  const opsWithOverlay = await get('/w/hadesmedia-ops/library?topic=design',
+    `${iris}; ${overlay}`);
+  check('the same file seen through another workspace is unaffected',
+    countOf(opsPlain.body) === countOf(opsWithOverlay.body)
+    && countOf(opsPlain.body) > countOf(plain.body),
+    `Studio Ops still counts ${countOf(opsWithOverlay.body)}`);
+
+  const wrongWs = await get('/w/hadesmedia-marketing/library?topic=design',
+    `${priya}; athena_ov_w_fin=1|r!${victim}-${DESIGN.toString(36)}`);
+  check('an overlay cookie naming another workspace is ignored',
+    countOf(wrongWs.body) === countOf(plain.body));
+
+  const nonsense = await get('/w/hadesmedia-marketing/library?topic=design',
+    `${priya}; athena_ov_w_mkt=9|garbage!!~~`);
+  check('an unknown overlay version is discarded, not guessed at',
+    nonsense.status === 200 && countOf(nonsense.body) === countOf(plain.body));
+}
+
+// ===========================================================================
+section('albums');
+// ===========================================================================
+{
+  const g = await json('/api/w/hadesmedia-marketing/graph?mode=files&topic=design', priya);
+  const [a, b, c] = g.data.ids;
+  const album = `athena_ov_w_mkt=1|a!alb1~Brand%20refresh~${a}.${b}.${c}`;
+
+  const page = await get('/w/hadesmedia-marketing/library?album=alb1', `${priya}; ${album}`);
+  check('an album narrows the library to its members', /\b3 items\b/.test(page.body), '3 items');
+  check('the album name is shown as an active filter', page.body.includes('Brand refresh'));
+  check('the album appears in the rail', /Albums/.test(page.body));
+
+  // Album membership and the tag algebra compose rather than override.
+  const crossed = await get('/w/hadesmedia-marketing/library?album=alb1&topic=finance',
+    `${priya}; ${album}`);
+  check('an album intersects a tag filter rather than replacing it',
+    !/\b3 items\b/.test(crossed.body));
+
+  const missing = await get('/w/hadesmedia-marketing/library?album=nope', `${priya}; ${album}`);
+  check('an unknown album shows nothing rather than everything',
+    /\b0 items\b/.test(missing.body), 'a deleted album must not widen the selection');
+
+  const forbidden = await get('/w/hadesmedia-finance/library?album=alb1', `${tomas}; ${album}`);
+  check('albums are workspace-scoped like corrections', /\b0 items\b/.test(forbidden.body));
+
+  /* Iris is a VIEWER in Marketing while Priya is an editor, on the same
+     library with the same grant -- so this is the role half of
+     can('tag') = min(role, grant access), asserted on the markup that is
+     actually served rather than on the function in isolation. */
+  const editor = await get('/w/hadesmedia-marketing/library', priya);
+  const viewer = await get('/w/hadesmedia-marketing/library', iris);
+  check('an editor is offered the album form', editor.body.includes('New album name'));
+  check('a viewer is not', !viewer.body.includes('New album name'),
+    'same workspace, same grant, lesser role');
+}
+
 console.log(
   `\n${failures === 0 ? `all ${checks} checks passed` : `${failures} of ${checks} FAILED`}\n`,
 );

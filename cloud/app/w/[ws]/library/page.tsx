@@ -1,11 +1,14 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { requireSession } from '@/lib/auth';
+import { workspaceContext } from '@/lib/data/context';
 import { getRepository } from '@/lib/data';
 import { parseFilterParams, toSearchParams, hasAnyFilter } from '@/lib/filter/params';
 import { formatCount } from '@/lib/format';
 import { library } from '@/lib/data/json/load';
-import { LibraryBrowser, type FileView } from '@/components/library/LibraryBrowser';
+import { TagIcon, Icon } from '@/lib/icons';
+import { LibraryBrowser, type FileView, type TagView } from '@/components/library/LibraryBrowser';
+import { AlbumRail, type AlbumView } from '@/components/library/AlbumRail';
 import s from './library.module.css';
 
 export const dynamic = 'force-dynamic';
@@ -27,7 +30,9 @@ export default async function LibraryPage({
   const session = await requireSession(`/w/${ws}/library`);
   const repo = getRepository();
 
-  const ctx = await repo.buildContext(session.user.id, ws);
+  // workspaceContext, not repo.buildContext: this is the call that carries the
+  // workspace's tag corrections and albums into every query below.
+  const ctx = await workspaceContext(session.user.id, ws);
   if (!ctx) notFound();
 
   // Rebuild a URLSearchParams so the same parser serves the page and the API.
@@ -43,7 +48,7 @@ export default async function LibraryPage({
     repo.facets(ctx, query),
   ]);
 
-  const tagById = new Map<number, { kind: string; displayName: string }>();
+  const tagById = new Map<number, { kind: string; name: string; displayName: string }>();
   for (const id of new Set(ctx.grants.map((g) => g.libraryId))) {
     for (const t of library(id).tags) tagById.set(t.id, t);
   }
@@ -62,16 +67,53 @@ export default async function LibraryPage({
     return `/w/${ws}/library${qs ? `?${qs}` : ''}`;
   }
 
+  /** Selecting an album narrows the current selection rather than replacing
+   *  it, so "Design files in the Brand refresh album" is one click from
+   *  either direction. */
+  function albumHref(id: string | null): string {
+    const next = new URLSearchParams(usp);
+    if (id) next.set('album', id);
+    else next.delete('album');
+    const qs = next.toString();
+    return `/w/${ws}/library${qs ? `?${qs}` : ''}`;
+  }
+
   const active = Object.entries(query.tags ?? {}).flatMap(([kind, names]) =>
     names.map((name) => ({ kind, name })));
 
-  /* Flattened for the client component. Resolving the doctype and the user
-     tags here means the browser receives one string per column instead of tag
-     ids plus a tag table it would have to join against. */
+  const albums: AlbumView[] = ctx.overlay.albums.map((a) => ({
+    id: a.id,
+    name: a.name,
+    count: a.fileIds.length,
+    href: albumHref(a.id === query.albumId ? null : a.id),
+    active: a.id === query.albumId,
+  }));
+  const openAlbum = ctx.overlay.albums.find((a) => a.id === query.albumId);
+
+  /* Flattened for the client component. Resolving tags to display strings here
+     means the browser receives what it draws instead of tag ids plus a tag
+     table it would have to join against.
+
+     `removed` is built from ctx.isRemoved rather than by diffing: the panel has
+     to show a suppressed tag in order to offer the undo, and the repository
+     has already dropped it from everything else. */
   const views: FileView[] = page.files.map((f) => {
-    const doctype = f.tags
-      .map((id) => tagById.get(id))
-      .find((t) => t?.kind === 'doctype');
+    const own = (f.userTags ?? [])
+      .filter((u) => u.workspaceId === ctx.workspace.id)
+      .map((u) => u.tagId);
+
+    const tags: TagView[] = [];
+    const removed: TagView[] = [];
+    for (const id of [...f.tags, ...own]) {
+      const t = tagById.get(id);
+      if (!t) continue;
+      const view: TagView = {
+        id, kind: t.kind, name: t.name, display: t.displayName, user: own.includes(id),
+      };
+      (ctx.isRemoved(f.id, id) ? removed : tags).push(view);
+    }
+
+    const doctype = tags.find((t) => t.kind === 'doctype');
     return {
       id: f.id,
       name: f.name,
@@ -81,11 +123,9 @@ export default async function LibraryPage({
       sizeBytes: f.sizeBytes,
       mtime: f.mtime,
       mediaType: f.mediaType,
-      kind: doctype?.displayName ?? f.mediaType,
-      userTags: (f.userTags ?? [])
-        .filter((u) => u.workspaceId === ctx.workspace.id)
-        .map((u) => tagById.get(u.tagId)?.displayName ?? '')
-        .filter(Boolean),
+      kindLabel: doctype?.display ?? f.mediaType,
+      tags,
+      removed,
       tintHex: f.tintHex ?? MEDIA_TINT[f.mediaType],
     };
   });
@@ -94,8 +134,16 @@ export default async function LibraryPage({
     <div className={s.layout}>
       {/* The rail's axes and their order come from TAG_AXES in
           athena/web/queries.py, so the two apps present the same vocabulary in
-          the same order. */}
+          the same order. Albums sit above them because they are a selection a
+          person made, not a facet the engine derived. */}
       <aside className={s.rail}>
+        <AlbumRail
+          ws={ws}
+          albums={albums}
+          clearHref={albumHref(null)}
+          canEdit={ctx.can('tag')}
+        />
+
         {facets.map((group) => (
           <section key={group.kind} className={s.group}>
             <h2 className={s.groupLabel}>{group.label}</h2>
@@ -109,6 +157,7 @@ export default async function LibraryPage({
                     className={`${s.chip} ${on ? s.chipOn : ''}`}
                     scroll={false}
                   >
+                    <TagIcon kind={group.kind} name={v.name} size={13} />
                     {v.display}
                     <span className={s.chipCount}>{v.count.toLocaleString()}</span>
                   </Link>
@@ -123,21 +172,31 @@ export default async function LibraryPage({
         <div className={s.head}>
           <p className={s.count}>
             {formatCount(page.total, 'item')}
+            {openAlbum ? ` in “${openAlbum.name}”` : ''}
             {query.q ? ` matching “${query.q}”` : ''}
           </p>
           <div className={s.spacer} />
           <Link href={`/w/${ws}/graph?${toSearchParams(query)}`} className={s.linkBtn}>
-            View as graph →
+            <Icon name="hub" size={14} /> View as graph
           </Link>
           {hasAnyFilter(query) && (
-            <Link href={`/w/${ws}/library`} className={s.linkBtn}>Clear</Link>
+            <Link href={`/w/${ws}/library`} className={s.linkBtn}>
+              <Icon name="close" size={14} /> Clear
+            </Link>
           )}
         </div>
 
-        {active.length > 0 && (
+        {(active.length > 0 || openAlbum) && (
           <div className={s.active}>
+            {openAlbum && (
+              <Link href={albumHref(null)} className={s.activeChip} scroll={false}>
+                <Icon name="photo_album" size={12} />
+                {openAlbum.name} <span aria-hidden="true">×</span>
+              </Link>
+            )}
             {active.map(({ kind, name }) => (
               <Link key={`${kind}:${name}`} href={toggleHref(kind, name)} className={s.activeChip}>
+                <TagIcon kind={kind} name={name} size={12} />
                 {name} <span aria-hidden="true">×</span>
               </Link>
             ))}
@@ -146,10 +205,20 @@ export default async function LibraryPage({
 
         {page.files.length === 0 ? (
           <p className={s.empty}>
-            Nothing matches. {hasAnyFilter(query) ? 'Try removing a filter.' : ''}
+            {openAlbum && page.total === 0 && openAlbum.fileIds.length === 0
+              ? `“${openAlbum.name}” is empty. Open a file and tick this album to add it.`
+              : `Nothing matches. ${hasAnyFilter(query) ? 'Try removing a filter.' : ''}`}
           </p>
         ) : (
-          <LibraryBrowser files={views} accent={ctx.workspace.accentHex} />
+          <LibraryBrowser
+            files={views}
+            accent={ctx.workspace.accentHex}
+            ws={ws}
+            albums={ctx.overlay.albums.map((a) => ({
+              id: a.id, name: a.name, fileIds: a.fileIds,
+            }))}
+            canEdit={ctx.can('tag')}
+          />
         )}
 
         {page.nextCursor && (

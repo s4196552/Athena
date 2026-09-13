@@ -1,0 +1,98 @@
+.panel {
+  position: fixed; top: var(--topbar); right: 0; bottom: 0;
+  width: 340px; max-width: 92vw; z-index: 40;
+  background: var(--bg-raised);
+  border-left: 1px solid var(--line);
+  padding: 14px 16px 40px;
+  overflow-y: auto;
+  box-shadow: -18px 0 40px #0008;
+}
+@media (max-width: 640px) {
+  .panel {
+    top: auto; width: 100%; max-width: none; max-height: 72vh;
+    border-left: 0; border-top: 1px solid var(--line);
+  }
+}
+
+.head { display: flex; align-items: flex-start; gap: 8px; margin-bottom: 14px; }
+.headIcon { color: var(--ws-accent, var(--accent)); margin-top: 2px; }
+.title {
+  flex: 1; min-width: 0; margin: 0;
+  font-size: 14.5px; font-weight: 600; line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+.close {
+  background: none; border: 0; cursor: pointer; color: var(--faint);
+  padding: 2px; border-radius: 6px; display: grid; place-items: center;
+}
+.close:hover { color: var(--text); background: var(--bg-sunk); }
+
+.facts { margin: 0 0 18px; display: grid; gap: 0; }
+.facts > div {
+  display: flex; gap: 10px; justify-content: space-between;
+  padding: 5px 0; border-bottom: 1px solid var(--line-soft); font-size: 12.5px;
+}
+.facts dt { color: var(--muted); margin: 0; flex: 0 0 auto; }
+.facts dd { margin: 0; text-align: right; min-width: 0; }
+/* rtl keeps the LEAF folder visible when the path is too long -- the end of an
+   Athena path is the part that identifies it, the root never varies. */
+.path {
+  direction: rtl; text-align: left; overflow: hidden;
+  text-overflow: ellipsis; white-space: nowrap; color: var(--muted);
+  font-size: 12px;
+}
+
+.section { margin-bottom: 20px; }
+.sectionLabel {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 10.5px; text-transform: uppercase; letter-spacing: .08em;
+  color: var(--faint); font-weight: 600; margin: 0 0 9px;
+}
+.textBtn {
+  margin-left: auto; display: inline-flex; align-items: center; gap: 4px;
+  background: none; border: 0; cursor: pointer; color: var(--muted);
+  font: inherit; font-size: 11px; text-transform: none; letter-spacing: 0;
+  padding: 2px 4px; border-radius: 5px;
+}
+.textBtn:hover { color: var(--text); background: var(--bg-sunk); }
+
+.tags { display: flex; flex-wrap: wrap; gap: 5px; }
+.tag, .tagUser, .tagOff {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 3px 5px 3px 8px; border-radius: 999px;
+  font-size: 12px; color: var(--muted);
+  background: var(--bg-sunk); border: 1px solid var(--line);
+}
+/* Ringed in the accent, matching the grid -- the same distinction
+   asset_tag.source makes between a machine's tag and a person's. */
+.tagUser { color: var(--ws-accent, var(--accent)); border-color: currentColor; }
+.tagOff { opacity: .55; }
+
+.tagX {
+  display: grid; place-items: center;
+  background: none; border: 0; cursor: pointer; color: inherit;
+  opacity: .5; padding: 2px; border-radius: 50%;
+}
+.tagX:hover { opacity: 1; background: var(--danger); color: #0d1117; }
+.tagOff .tagX:hover { background: var(--ok); }
+.tagX:disabled { opacity: .25; cursor: default; }
+
+.removedLabel {
+  display: flex; align-items: center; gap: 5px;
+  font-size: 10.5px; text-transform: uppercase; letter-spacing: .07em;
+  color: var(--faint); font-weight: 600; margin: 14px 0 8px;
+}
+
+.albums { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 1px; }
+.albumRow {
+  display: flex; align-items: center; gap: 7px;
+  padding: 5px 6px; border-radius: 6px; cursor: pointer; font-size: 12.5px;
+}
+.albumRow:hover { background: var(--bg-sunk); }
+.albumRow input { accent-color: var(--ws-accent, var(--accent)); margin: 0; }
+.albumIcon { color: var(--faint); }
+.albumName { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.none { color: var(--faint); font-size: 12px; margin: 0; }
+.note { margin: 10px 0 0; font-size: 11px; line-height: 1.55; color: var(--faint); }
+.error { margin: 10px 0 0; font-size: 12px; color: var(--danger); line-height: 1.45; }

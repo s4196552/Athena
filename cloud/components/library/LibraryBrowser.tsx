@@ -1,13 +1,25 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useLocalSetting } from '@/lib/useLocalSetting';
 import { formatBytes, formatDate } from '@/lib/format';
+import { Icon, TagIcon, iconForMedia } from '@/lib/icons';
+import { FileDetail, type AlbumMembership } from './FileDetail';
 import s from './browser.module.css';
 
+/** One tag as the browser needs it: resolved to a display string, but keeping
+ *  kind and name because the icon lookup is keyed on `kind:name`. */
+export interface TagView {
+  id: number;
+  kind: string;
+  name: string;
+  display: string;
+  /** True for this workspace's own tags (asset_tag.source = 'user'). */
+  user?: boolean;
+}
+
 /** Everything the browser needs, flattened server-side. Deliberately not the
- *  full FileRecord: tag ids would mean shipping a tag table too, for a column
- *  that only ever shows one resolved string. */
+ *  full FileRecord: shipping tag ids would mean shipping the tag table too. */
 export interface FileView {
   id: string;
   name: string;
@@ -18,9 +30,11 @@ export interface FileView {
   mtime: number;
   mediaType: 'image' | 'video' | 'audio' | 'document' | 'other';
   /** Resolved doctype display, e.g. "Invoice". */
-  kind: string;
-  /** This workspace's own tags on this file. */
-  userTags: string[];
+  kindLabel: string;
+  /** Tags this workspace currently counts. */
+  tags: TagView[];
+  /** Tags this workspace has removed. Still in the catalogue, not counted here. */
+  removed: TagView[];
   tintHex?: string;
 }
 
@@ -33,11 +47,40 @@ const TILE_SIZES = [96, 128, 168, 220, 300];
 
 const MEDIA = new Set(['image', 'video']);
 
-export function LibraryBrowser({ files, accent }: { files: FileView[]; accent: string }) {
+/** Chips shown inline on a row. The rest are a click away in the panel --
+ *  eight chips per row across 120 rows is a wall, not information. */
+const ROW_TAG_LIMIT = 3;
+
+export function LibraryBrowser({
+  files,
+  accent,
+  ws,
+  albums,
+  canEdit,
+}: {
+  files: FileView[];
+  accent: string;
+  ws: string;
+  albums: AlbumMembership[];
+  canEdit: boolean;
+}) {
   const [mode, setMode] = useLocalSetting<ViewMode>('athena:view', 'auto');
   const [size, setSize] = useLocalSetting<number>('athena:tile', 2);
+  const [open, setOpen] = useState<FileView | null>(null);
+  const openId = open?.id ?? null;
 
   const tile = TILE_SIZES[Math.min(Math.max(size, 0), TILE_SIZES.length - 1)];
+
+  /* The open file is held as a VALUE, not looked up by id in `files` each
+     render, and that is not an accident.
+     
+     Removing a tag while filtered by that tag is the single most common way
+     this feature gets used -- "show me everything tagged Design, find the ones
+     that are not" -- and the moment the correction lands, the file stops
+     matching and the server drops it from the page. Looking the id up would
+     then resolve to nothing: the panel would vanish mid-click, taking the undo
+     with it, exactly when you most want the undo. So the panel owns its copy
+     for as long as it is open, and applies each change to it itself. */
 
   /* Auto is the default because it matches what the files actually are. A
      spreadsheet has no thumbnail worth 220 pixels -- rendering it as a tile
@@ -54,7 +97,10 @@ export function LibraryBrowser({ files, accent }: { files: FileView[]; accent: s
   }, [files, mode]);
 
   return (
-    <>
+    /* Padded, not overlaid, while the panel is open: a fixed panel laid over
+       the grid hides a whole column of tiles, and the one it hides is the one
+       next to the thing you just clicked. */
+    <div className={open ? s.shifted : undefined}>
       <div className={s.controls}>
         <div className={s.modes} role="group" aria-label="View">
           {(['auto', 'grid', 'list'] as const).map((m) => (
@@ -65,6 +111,10 @@ export function LibraryBrowser({ files, accent }: { files: FileView[]; accent: s
               onClick={() => setMode(m)}
               aria-pressed={mode === m}
             >
+              <Icon
+                name={m === 'auto' ? 'auto_awesome' : m === 'grid' ? 'grid_view' : 'view_list'}
+                size={14}
+              />
               {m === 'auto' ? 'Auto' : m === 'grid' ? 'Grid' : 'List'}
             </button>
           ))}
@@ -102,9 +152,20 @@ export function LibraryBrowser({ files, accent }: { files: FileView[]; accent: s
           >
             {media.map((f) => (
               <article key={f.id} className={s.card}>
-                <div className={s.thumb} style={{ background: f.tintHex ?? '#3d5a80' }}>
+                <button
+                  type="button"
+                  className={`${s.thumb} ${openId === f.id ? s.thumbOn : ''}`}
+                  style={{ background: f.tintHex ?? '#3d5a80' }}
+                  onClick={() => setOpen(f)}
+                  aria-label={`Details for ${f.name}`}
+                >
                   <span className={s.ext}>{f.ext}</span>
-                </div>
+                  {f.removed.length > 0 && (
+                    <span className={s.fixed} title="This workspace has corrected a tag here">
+                      <Icon name="visibility_off" size={11} />
+                    </span>
+                  )}
+                </button>
                 <h3 className={s.name} title={f.relPath}>{f.name}</h3>
                 {tile >= 128 && (
                   <p className={s.meta}>{formatBytes(f.sizeBytes)}</p>
@@ -135,23 +196,53 @@ export function LibraryBrowser({ files, accent }: { files: FileView[]; accent: s
               </thead>
               <tbody>
                 {rest.map((f) => (
-                  <tr key={f.id}>
+                  <tr
+                    key={f.id}
+                    className={openId === f.id ? s.rowOn : undefined}
+                    onClick={() => setOpen(f)}
+                  >
                     <td className={s.colName}>
                       <span className={s.rowName} title={f.relPath}>
                         <span className={s.badge} style={{ background: f.tintHex ?? '#4a4a5e' }}>
-                          {f.ext}
+                          <Icon name={iconForMedia(f.mediaType)} size={12} />
                         </span>
-                        {f.name}
+                        <span>{f.name}</span>
                       </span>
-                      {f.userTags.length > 0 && (
+                      {f.tags.length > 0 && (
                         <span className={s.rowTags}>
-                          {f.userTags.map((t) => (
-                            <span key={t} className={s.userTag} style={{ color: accent }}>{t}</span>
+                          {f.tags.slice(0, ROW_TAG_LIMIT).map((t) => (
+                            <span
+                              key={t.id}
+                              className={t.user ? s.userTag : s.machineTag}
+                              style={t.user ? { color: accent } : undefined}
+                            >
+                              <TagIcon kind={t.kind} name={t.name} size={11} />
+                              {t.display}
+                            </span>
                           ))}
+                          {f.tags.length > ROW_TAG_LIMIT && (
+                            <span className={s.moreTags}>
+                              +{f.tags.length - ROW_TAG_LIMIT}
+                            </span>
+                          )}
+                          {f.removed.length > 0 && (
+                            <span
+                              className={s.correctedTag}
+                              title={`${f.removed.length} tag(s) removed in this workspace`}
+                            >
+                              <Icon name="visibility_off" size={11} />
+                              {f.removed.length}
+                            </span>
+                          )}
                         </span>
                       )}
                     </td>
-                    <td className={s.colKind}>{f.kind}</td>
+                    <td className={s.colKind}>
+                      <span className={s.kindCell}>
+                        <Icon name={iconForMedia(f.mediaType)} size={13} className={s.kindIcon} />
+                        {f.kindLabel}
+                      </span>
+                    </td>
                     <td className={s.colSize}>{formatBytes(f.sizeBytes)}</td>
                     <td className={s.colDate}>{formatDate(f.mtime)}</td>
                     <td className={s.colWhere} title={f.parentRel}>
@@ -164,6 +255,17 @@ export function LibraryBrowser({ files, accent }: { files: FileView[]; accent: s
           </div>
         </>
       )}
-    </>
+
+      {open && (
+        <FileDetail
+          key={open.id}
+          ws={ws}
+          file={open}
+          albums={albums}
+          canEdit={canEdit}
+          onClose={() => setOpen(null)}
+        />
+      )}
+    </div>
   );
 }

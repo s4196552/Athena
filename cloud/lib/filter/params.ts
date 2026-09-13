@@ -22,6 +22,7 @@ export function parseFilterParams(sp: URLSearchParams): FileQuery {
   return {
     tags: Object.keys(tags).length ? tags : undefined,
     q: sp.get('q')?.trim() || undefined,
+    albumId: sp.get('album')?.trim() || undefined,
     mediaType: sp.get('type')?.trim() || undefined,
     libraryId: (sp.get('lib')?.trim() || undefined) as LibraryId | undefined,
   };
@@ -37,11 +38,14 @@ export function toSearchParams(query: FileQuery): URLSearchParams {
     if (values?.length) sp.set(kind, [...values].sort().join(','));
   }
   if (query.q) sp.set('q', query.q);
+  if (query.albumId) sp.set('album', query.albumId);
   if (query.mediaType) sp.set('type', query.mediaType);
   if (query.libraryId) sp.set('lib', query.libraryId);
   return sp;
 }
 
 export function hasAnyFilter(query: FileQuery): boolean {
-  return Boolean(query.q || query.mediaType || Object.keys(query.tags ?? {}).length);
+  return Boolean(
+    query.q || query.mediaType || query.albumId || Object.keys(query.tags ?? {}).length,
+  );
 }

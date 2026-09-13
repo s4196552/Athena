@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getSession } from '@/lib/auth';
 import { getRepository } from '@/lib/data';
+import { workspaceContext } from '@/lib/data/context';
 import { library } from '@/lib/data/json/load';
 import { buildTagGraph } from '@/lib/graph/tagGraph';
 import { induceFileGraph } from '@/lib/graph/fileGraph';
@@ -22,7 +23,7 @@ export async function GET(
   if (!session) return NextResponse.json({ error: 'not signed in' }, { status: 401 });
 
   const repo = getRepository();
-  const ctx = await repo.buildContext(session.user.id, ws);
+  const ctx = await workspaceContext(session.user.id, ws);
   if (!ctx) return NextResponse.json({ error: 'not found' }, { status: 404 });
 
   const url = new URL(request.url);
@@ -45,7 +46,11 @@ export async function GET(
      and still not see each other's annotations. */
   const tagIdsOf = (f: FileRecord): number[] => {
     const own = f.userTags?.filter((u) => u.workspaceId === ctx.workspace.id).map((u) => u.tagId);
-    return own?.length ? [...f.tags, ...own] : f.tags;
+    const all = own?.length ? [...f.tags, ...own] : f.tags;
+    // Corrections apply to the graph too, and they have to: a tag removed
+    // because it was wrong must stop pulling that node into the wrong cluster,
+    // or the correction is cosmetic.
+    return ctx.overlay.removals.length ? all.filter((id) => !ctx.isRemoved(f.id, id)) : all;
   };
 
   if (mode === 'tags') {

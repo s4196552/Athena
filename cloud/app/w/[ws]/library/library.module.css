@@ -21,10 +21,15 @@
 .chips { display: flex; flex-wrap: wrap; gap: 5px; }
 .chip {
   display: inline-flex; align-items: center; gap: 5px;
-  padding: 4px 8px; border-radius: 999px;
+  padding: 4px 8px 4px 6px; border-radius: 999px;
   font-size: 12px; text-decoration: none; color: var(--muted);
   background: var(--bg-raised); border: 1px solid var(--line);
 }
+/* The icon inherits currentColor, which is the whole reason these are inline
+   SVG and not <img>: a selected chip inverts to the workspace accent and the
+   glyph inverts with it, from one colour declaration. */
+.chip svg { opacity: .75; }
+.chip:hover svg, .chipOn svg { opacity: 1; }
 .chip:hover { color: var(--text); border-color: var(--accent-dim); }
 .chipOn {
   color: #06101f; font-weight: 500;
@@ -39,6 +44,7 @@
 .count { margin: 0; font-size: 13.5px; color: var(--muted); }
 .spacer { flex: 1; }
 .linkBtn {
+  display: inline-flex; align-items: center; gap: 5px;
   font-size: 12.5px; text-decoration: none; color: var(--text);
   background: var(--bg-raised); border: 1px solid var(--line);
   border-radius: 7px; padding: 5px 10px;
@@ -47,7 +53,8 @@
 
 .active { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px; }
 .activeChip {
-  font-size: 12px; padding: 4px 9px; border-radius: 999px;
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: 12px; padding: 4px 9px 4px 7px; border-radius: 999px;
   text-decoration: none; color: #06101f;
   background: var(--ws-accent, var(--accent));
 }

@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { requireSession } from '@/lib/auth';
 import { getRepository } from '@/lib/data';
+import { workspaceContext } from '@/lib/data/context';
 import { describeScope } from '@/lib/data/json/scope';
 import { formatBytes } from '@/lib/format';
 import s from './ws.module.css';
@@ -17,7 +18,7 @@ export default async function WorkspaceOverview({
   const session = await requireSession(`/w/${ws}`);
   const repo = getRepository();
 
-  const ctx = await repo.buildContext(session.user.id, ws);
+  const ctx = await workspaceContext(session.user.id, ws);
   if (!ctx) notFound();
 
   const [summary, facets, views] = await Promise.all([

@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation';
 import { Suspense } from 'react';
 import { requireSession } from '@/lib/auth';
 import { getRepository } from '@/lib/data';
+import { workspaceContext } from '@/lib/data/context';
 import { GraphClient } from './GraphClient';
 
 export const dynamic = 'force-dynamic';
@@ -15,7 +16,7 @@ export default async function GraphPage({
   const session = await requireSession(`/w/${ws}/graph`);
   const repo = getRepository();
 
-  const ctx = await repo.buildContext(session.user.id, ws);
+  const ctx = await workspaceContext(session.user.id, ws);
   if (!ctx) notFound();
 
   /* Colour groups are per workspace, which is the point: Marketing and Finance

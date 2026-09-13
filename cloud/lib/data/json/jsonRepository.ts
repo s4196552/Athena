@@ -6,8 +6,10 @@ import type {
 } from '../repository';
 import type {
   User, UserId, Org, OrgId, Workspace, WorkspaceId, Library, LibraryId,
-  LibraryGrant, FileRecord, FileId, TagRecord, GraphMode, WorkspaceRole,
+  LibraryGrant, FileRecord, FileId, TagId, TagRecord, GraphMode, WorkspaceRole,
 } from '../types';
+import { emptyOverlay, removalIndex } from '../../overlay/types';
+import type { Overlay } from '../../overlay/types';
 import { TAG_AXES } from '../../taxonomy';
 
 /* The JSON driver.
@@ -114,7 +116,11 @@ class JsonRepository implements AthenaRepository {
 
   // --- catalogue ----------------------------------------------------------
 
-  async buildContext(userId: UserId, workspaceSlug: string): Promise<WorkspaceContext | null> {
+  async buildContext(
+    userId: UserId,
+    workspaceSlug: string,
+    overlay?: Overlay,
+  ): Promise<WorkspaceContext | null> {
     const t = tenancy();
     const workspace = t.workspaces.find((w) => w.slug === workspaceSlug);
     if (!workspace) return null;
@@ -133,12 +139,25 @@ class JsonRepository implements AthenaRepository {
     const bestGrant = Math.max(0, ...grants.map((g) => grantRank(g.access)));
     const roleRank = ranks(membership.role);
 
+    /* An overlay belonging to a DIFFERENT workspace is discarded rather than
+       applied. The cookie is per workspace and the caller reads the right one,
+       but this is the boundary where getting it wrong would show Finance's
+       corrections inside Marketing, so it is checked here too. */
+    const own = overlay && overlay.workspaceId === workspace.id
+      ? overlay
+      : emptyOverlay(workspace.id);
+    const removed = removalIndex(own);
+
     return {
       userId,
       org,
       workspace,
       role: membership.role,
       grants,
+      overlay: own,
+      isRemoved(fileId: FileId, tagId: TagId) {
+        return removed.get(fileId)?.has(tagId) ?? false;
+      },
       can(action) {
         // Effective permission is the lesser of what the role allows and what
         // the grant allows. A workspace admin still cannot tag a library that
@@ -169,18 +188,33 @@ class JsonRepository implements AthenaRepository {
   /** Tags visible to this workspace: machine tags plus this workspace's own
    *  user tags. Another workspace's `custom` tags are invisible by
    *  construction -- they are attached with a workspaceId and filtered here. */
-  private tagIdsOf(f: FileRecord, workspaceId: WorkspaceId): number[] {
+  private tagIdsOf(f: FileRecord, ctx: WorkspaceContext): number[] {
+    const workspaceId = ctx.workspace.id;
     const own = f.userTags?.filter((u) => u.workspaceId === workspaceId).map((u) => u.tagId) ?? [];
-    return own.length ? [...f.tags, ...own] : f.tags;
+    const all = own.length ? [...f.tags, ...own] : f.tags;
+
+    /* THE chokepoint. Removals are applied here and nowhere else, which is why
+       a suppressed tag disappears from the facet counts, from the filter
+       algebra, from the summary and from both graph modes without any of them
+       knowing the feature exists. */
+    if (!ctx.overlay.removals.length) return all;
+    const kept = all.filter((id) => !ctx.isRemoved(f.id, id));
+    return kept.length === all.length ? all : kept;
   }
 
-  private matches(f: FileRecord, ctx: WorkspaceContext, query: FileQuery): boolean {
+  private matches(
+    f: FileRecord,
+    ctx: WorkspaceContext,
+    query: FileQuery,
+    albumMembers?: Set<string> | null,
+  ): boolean {
+    if (albumMembers && !albumMembers.has(f.id)) return false;
     if (query.mediaType && f.mediaType !== query.mediaType) return false;
     if (query.q && !f.name.toLowerCase().includes(query.q.toLowerCase())) return false;
 
     if (query.tags) {
       const bundle = library(f.libraryId);
-      const ids = this.tagIdsOf(f, ctx.workspace.id);
+      const ids = this.tagIdsOf(f, ctx);
       // OR within a kind, AND across kinds.
       for (const [kind, names] of Object.entries(query.tags)) {
         if (!names.length) continue;
@@ -194,8 +228,19 @@ class JsonRepository implements AthenaRepository {
     return true;
   }
 
+  /** An album names files, not a query, so membership is a set lookup. A
+   *  missing album yields an empty set rather than the whole library: a
+   *  deleted album must not silently widen the selection. */
+  private albumMembers(ctx: WorkspaceContext, albumId?: string): Set<string> | null {
+    if (!albumId) return null;
+    const album = ctx.overlay.albums.find((a) => a.id === albumId);
+    return new Set(album?.fileIds ?? []);
+  }
+
   async listFiles(ctx: WorkspaceContext, query: FileQuery): Promise<FilePage> {
-    const all = this.visible(ctx, query.libraryId).filter((f) => this.matches(f, ctx, query));
+    const members = this.albumMembers(ctx, query.albumId);
+    const all = this.visible(ctx, query.libraryId)
+      .filter((f) => this.matches(f, ctx, query, members));
     const limit = query.limit ?? PAGE_SIZE;
     const start = query.cursor ? Number(query.cursor) : 0;
     const slice = all.slice(start, start + limit);
@@ -222,11 +267,13 @@ class JsonRepository implements AthenaRepository {
   }
 
   async facets(ctx: WorkspaceContext, query: FileQuery): Promise<FacetGroup[]> {
-    const files = this.visible(ctx, query.libraryId).filter((f) => this.matches(f, ctx, query));
+    const members = this.albumMembers(ctx, query.albumId);
+    const files = this.visible(ctx, query.libraryId)
+      .filter((f) => this.matches(f, ctx, query, members));
 
     const counts = new Map<number, number>();
     for (const f of files) {
-      for (const id of this.tagIdsOf(f, ctx.workspace.id)) {
+      for (const id of this.tagIdsOf(f, ctx)) {
         counts.set(id, (counts.get(id) ?? 0) + 1);
       }
     }
@@ -256,7 +303,7 @@ class JsonRepository implements AthenaRepository {
   async summary(ctx: WorkspaceContext) {
     const files = this.visible(ctx);
     const tagIds = new Set<number>();
-    for (const f of files) for (const t of this.tagIdsOf(f, ctx.workspace.id)) tagIds.add(t);
+    for (const f of files) for (const t of this.tagIdsOf(f, ctx)) tagIds.add(t);
     return {
       files: files.length,
       tags: tagIds.size,

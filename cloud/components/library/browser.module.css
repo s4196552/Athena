@@ -1,3 +1,9 @@
+/* Room for the detail panel. Only above the width where the panel docks to
+   the side -- below it, it docks to the bottom and needs no gutter. */
+@media (min-width: 641px) {
+  .shifted { padding-right: 356px; }
+}
+
 /* ---------- controls ---------- */
 .controls {
   display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
@@ -6,7 +12,8 @@
 
 .modes { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
 .mode {
-  padding: 5px 13px; font: inherit; font-size: 12.5px;
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 5px 11px; font: inherit; font-size: 12.5px;
   color: var(--muted); background: transparent; border: 0; cursor: pointer;
 }
 .mode:hover { color: var(--text); background: #1f2836; }
@@ -38,11 +45,23 @@
    is one number in one place rather than five CSS classes. */
 .grid { display: grid; gap: 12px; }
 .card { min-width: 0; }
+/* A button, not a div: the tile opens the detail panel, so it has to be
+   reachable by keyboard and announced as something you can press. */
 .thumb {
+  position: relative; width: 100%;
   aspect-ratio: 4 / 3; border-radius: 8px;
   border: 1px solid var(--line);
   display: grid; place-items: center;
-  margin-bottom: 6px;
+  margin-bottom: 6px; padding: 0; cursor: pointer;
+}
+.thumbOn { border-color: var(--ws-accent, var(--accent)); box-shadow: 0 0 0 2px var(--accent-dim); }
+
+/* The marker for "a tag was corrected here", so a correction is discoverable
+   from the grid and not only from inside the panel that made it. */
+.fixed {
+  position: absolute; top: 5px; right: 5px;
+  display: grid; place-items: center;
+  background: #0009; color: #ffffffcc; border-radius: 4px; padding: 2px;
 }
 .ext {
   font-size: 10px; text-transform: uppercase; letter-spacing: .07em;
@@ -65,7 +84,7 @@
 }
 .list { width: 100%; border-collapse: collapse; font-size: 13px; }
 .list th, .list td {
-  text-align: left; padding: 7px 12px;
+  text-align: left; padding: 6px 12px; vertical-align: top;
   border-bottom: 1px solid var(--line-soft);
   white-space: nowrap;
 }
@@ -83,36 +102,53 @@
   color: var(--faint); font-weight: 600;
   background: var(--bg-raised);
 }
+.list tbody tr { cursor: pointer; }
 .list tbody tr:hover { background: #161d28; }
+.rowOn { background: var(--accent-dim) !important; }
 
 /* The name gets the room it needs and the folder gets enough to be useful --
    truncating the folder to "Art..." told you nothing it did not already say. */
-.colName { width: 38%; max-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.colName { width: 42%; max-width: 0; overflow: hidden; }
 .colKind { width: 12%; color: var(--muted); }
 .colSize { width: 9%; text-align: right; font-variant-numeric: tabular-nums; color: var(--muted); }
 .colDate { width: 13%; color: var(--muted); }
 .colWhere {
-  width: 28%; max-width: 0;
+  width: 24%; max-width: 0;
   color: var(--faint); overflow: hidden; text-overflow: ellipsis;
   direction: rtl; text-align: left;   /* keep the leaf folder, drop the root */
 }
 
-.rowName { display: inline-flex; align-items: center; gap: 8px; min-width: 0; max-width: 100%; }
-.rowName > :last-child { overflow: hidden; text-overflow: ellipsis; }
+/* Name on the first line, tags on the second.
+   Both on one line is what the cell was doing before, and at 34% of the table
+   width there is not room for a filename AND three chips: the chips were being
+   clipped away entirely, leaving only the ellipsis that clipping produces. The
+   whole point of showing tags in the row is spotting a wrong one without
+   opening each file, so they get the room instead of being hidden. */
+.rowName { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.rowName > span:not(.badge) { overflow: hidden; text-overflow: ellipsis; }
 .badge {
-  flex: 0 0 auto;
-  font-size: 9px; text-transform: uppercase; letter-spacing: .06em;
-  font-weight: 600; color: #ffffffdd;
-  border-radius: 3px; padding: 2px 5px; min-width: 30px; text-align: center;
+  flex: 0 0 auto; display: grid; place-items: center;
+  color: #ffffffdd; border-radius: 4px; padding: 4px;
 }
 
-.rowTags { display: inline-flex; gap: 4px; margin-left: 8px; }
+.kindCell { display: inline-flex; align-items: center; gap: 6px; }
+.kindIcon { color: var(--faint); }
+
+.rowTags {
+  display: flex; align-items: center; gap: 4px;
+  margin: 3px 0 0 28px; overflow: hidden;
+}
+.machineTag, .userTag, .correctedTag {
+  display: inline-flex; align-items: center; gap: 3px;
+  font-size: 10px; padding: 1px 6px 1px 4px; border-radius: 999px;
+  line-height: 1.5;
+}
+.machineTag { color: var(--faint); background: var(--bg-sunk); border: 1px solid var(--line-soft); }
 /* Ringed rather than filled, so a person's tag reads as distinct from a
    machine's -- the same distinction asset_tag.source makes in the schema. */
-.userTag {
-  font-size: 10px; padding: 0 5px; border-radius: 999px;
-  border: 1px solid currentColor;
-}
+.userTag { border: 1px solid currentColor; }
+.correctedTag { color: var(--faint); border: 1px dashed var(--line); }
+.moreTags { font-size: 10px; color: var(--faint); }
 
 @media (max-width: 720px) {
   .colDate, .colWhere { display: none; }
