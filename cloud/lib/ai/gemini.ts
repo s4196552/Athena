@@ -134,3 +134,40 @@ export async function writeProse(prompt: string): Promise<BriefProse> {
     model: MODEL,
   };
 }
+
+/* Does Google accept this key, from this server, right now?
+ *
+ * models.list rather than generateContent: it needs the same credential, is
+ * free, and cannot be turned into a way to spend the key by hitting the health
+ * endpoint in a loop.
+ *
+ * The message is passed through verbatim because Google's 400s are unusually
+ * good -- "API key not valid" and "API key expired" are different problems with
+ * different fixes, and collapsing them into "AI unavailable" throws the useful
+ * half away. The KEY is never echoed, only Google's verdict on it. */
+export async function probeGemini(): Promise<{
+  ok: boolean; model: string; status?: number; detail?: string;
+}> {
+  const key = geminiKey();
+  if (!key) return { ok: false, model: MODEL, detail: 'GEMINI_API_KEY is not set' };
+
+  try {
+    const res = await fetch(`${BASE}?pageSize=1`, {
+      headers: { 'x-goog-api-key': key },
+      signal: AbortSignal.timeout(10_000),
+      cache: 'no-store',
+    });
+    if (res.ok) return { ok: true, model: MODEL, status: res.status };
+
+    const body = await res.text();
+    const message = (() => {
+      try { return JSON.parse(body)?.error?.message; } catch { return undefined; }
+    })();
+    return { ok: false, model: MODEL, status: res.status, detail: (message ?? body).slice(0, 200) };
+  } catch (err) {
+    return {
+      ok: false, model: MODEL,
+      detail: err instanceof Error ? err.message.slice(0, 200) : 'request failed',
+    };
+  }
+}

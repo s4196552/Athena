@@ -4,7 +4,7 @@ import { requireSession } from '@/lib/auth';
 import { getRepository } from '@/lib/data';
 import { workspaceContext } from '@/lib/data/context';
 import { describeScope } from '@/lib/data/json/scope';
-import { formatBytes } from '@/lib/format';
+import { formatBytes, formatNumber } from '@/lib/format';
 import s from './ws.module.css';
 
 export const dynamic = 'force-dynamic';
@@ -69,11 +69,11 @@ export default async function WorkspaceOverview({
 
       <div className={s.stats}>
         <div className={s.stat}>
-          <div className={s.statValue}>{summary.files.toLocaleString()}</div>
+          <div className={s.statValue}>{formatNumber(summary.files)}</div>
           <div className={s.statLabel}>Files in scope</div>
         </div>
         <div className={s.stat}>
-          <div className={s.statValue}>{summary.tags.toLocaleString()}</div>
+          <div className={s.statValue}>{formatNumber(summary.tags)}</div>
           <div className={s.statLabel}>Distinct tags</div>
         </div>
         <div className={s.stat}>
@@ -109,9 +109,9 @@ export default async function WorkspaceOverview({
                 <div className={s.libRow}>
                   <dt>Visible to you</dt>
                   <dd>
-                    {l.visible.toLocaleString()}
+                    {formatNumber(l.visible)}
                     {l.visible !== l.total && (
-                      <span style={{ color: 'var(--faint)' }}> of {l.total.toLocaleString()}</span>
+                      <span style={{ color: 'var(--faint)' }}> of {formatNumber(l.total)}</span>
                     )}
                   </dd>
                 </div>
@@ -135,7 +135,7 @@ export default async function WorkspaceOverview({
             {topics.values.slice(0, 12).map((v) => (
               <Link key={v.tagId} href={`${base}/library?topic=${encodeURIComponent(v.name)}`} className={s.chip}>
                 {v.display}
-                <span className={s.chipCount}>{v.count.toLocaleString()}</span>
+                <span className={s.chipCount}>{formatNumber(v.count)}</span>
               </Link>
             ))}
           </div>

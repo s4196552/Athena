@@ -6,6 +6,7 @@ import { DEFAULT_NODE_COLOR } from '@/lib/graph/constants';
 import { useStoredRules } from '@/lib/graph/useStoredRules';
 import type { ColorRule, GraphMode, TagKind } from '@/lib/data/types';
 import s from './colors.module.css';
+import { formatNumber } from '@/lib/format';
 
 const PALETTE = [
   '#ffc861', '#b48cff', '#7ee0a3', '#5aa9ff', '#ff8fc2', '#ff9f5a',
@@ -128,7 +129,7 @@ export function ColorGroupsEditor({ ws, mode, initial, tagTable, preview, sugges
               </span>
 
               <span className={s.ruleCount}>
-                {(counts.get(rule.color) ?? 0).toLocaleString()}
+                {(counts.get(rule.color) ?? formatNumber(0))}
               </span>
 
               <span className={s.ruleActions}>
@@ -186,7 +187,7 @@ export function ColorGroupsEditor({ ws, mode, initial, tagTable, preview, sugges
       <div className={s.previewPane}>
         <h2 className={s.title}>Preview</h2>
         <p className={s.explain}>
-          {preview.length.toLocaleString()} files from this workspace, coloured by
+          {formatNumber(preview.length)} files from this workspace, coloured by
           the rules as they stand.
         </p>
         <div className={s.swatchGrid} aria-hidden="true">
@@ -196,7 +197,7 @@ export function ColorGroupsEditor({ ws, mode, initial, tagTable, preview, sugges
         </div>
         <p className={s.legendRow}>
           <span className={s.dot} style={{ background: DEFAULT_NODE_COLOR }} />
-          Unmatched: {(counts.get(DEFAULT_NODE_COLOR) ?? 0).toLocaleString()}
+          Unmatched: {(counts.get(DEFAULT_NODE_COLOR) ?? formatNumber(0))}
         </p>
       </div>
     </div>

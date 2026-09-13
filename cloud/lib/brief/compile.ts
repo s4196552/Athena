@@ -1,5 +1,5 @@
 import type { Digest } from './digest';
-import { formatBytes } from '../format';
+import { formatBytes, formatNumber } from '../format';
 
 /* Rendering a digest, and the prompt that turns one into prose.
  *
@@ -20,7 +20,7 @@ function line(label: string, rows: [string, number][]): string[] {
   if (!rows.length) return [];
   return [
     `### ${label}`,
-    ...rows.slice(0, MAX_ROWS).map(([name, n]) => `- ${name} — ${n.toLocaleString()}`),
+    ...rows.slice(0, MAX_ROWS).map(([name, n]) => `- ${name} — ${formatNumber(n)}`),
     '',
   ];
 }
@@ -33,15 +33,15 @@ export function compileBrief(d: Digest, label: string): { title: string; body: s
   const what = d.doctypes[0]?.[0]?.toLowerCase();
   const about = d.topics[0]?.[0]?.toLowerCase();
   const title = what && about
-    ? `${d.count.toLocaleString()} ${what} files, mostly ${about}`
-    : `${d.count.toLocaleString()} files${label ? ` — ${label}` : ''}`;
+    ? `${formatNumber(d.count)} ${what} files, mostly ${about}`
+    : `${formatNumber(d.count)} files${label ? ` — ${label}` : ''}`;
 
   const span = d.earliest && d.latest
     ? `${new Date(d.earliest).getFullYear()}–${new Date(d.latest).getFullYear()}`
     : '';
 
   const lines: string[] = [
-    `**${d.count.toLocaleString()} ${d.count === 1 ? 'file' : 'files'}**`
+    `**${formatNumber(d.count)} ${d.count === 1 ? 'file' : 'files'}**`
     + `, ${formatBytes(d.totalBytes)}`
     + (span ? `, modified ${span}` : '')
     + (label ? `, matching ${label}` : '')
@@ -64,9 +64,9 @@ export function compileBrief(d: Digest, label: string): { title: string; body: s
 
   if (d.years.length) {
     lines.push('### When');
-    lines.push(d.years.map(([y, n]) => `${y} (${n.toLocaleString()})`).join(', ') + '.');
+    lines.push(d.years.map(([y, n]) => `${y} (${formatNumber(n)})`).join(', ') + '.');
     if (d.undated) {
-      lines.push('', `${d.undated.toLocaleString()} carry no date in their content.`);
+      lines.push('', `${formatNumber(d.undated)} carry no date in their content.`);
     }
     lines.push('');
   }

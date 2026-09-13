@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { getRepository } from '@/lib/data';
 import { describeScope } from '@/lib/data/json/scope';
 import { DEMO_AUTH } from '@/lib/auth/mode';
-import { geminiStatus } from '@/lib/ai/gemini';
+import { geminiStatus, probeGemini } from '@/lib/ai/gemini';
 import type { UserId } from '@/lib/data/types';
 
 /* The deploy smoke test.
@@ -16,7 +16,9 @@ import type { UserId } from '@/lib/data/types';
  * mode is the nasty one: it works locally and 500s on Vercel.
  */
 export async function GET(request: Request) {
-  const deep = new URL(request.url).searchParams.get('deep') === '1';
+  const params = new URL(request.url).searchParams;
+  const deep = params.get('deep') === '1';
+  const probeAi = params.get('ai') === '1';
 
   /* `authSecret` reports PRESENCE ONLY, never the value. Without it, a
      deployment missing AUTH_SECRET builds cleanly, serves every public page
@@ -41,6 +43,17 @@ export async function GET(request: Request) {
        working, which is a confusing thing to debug from the outside. */
     ai: geminiStatus(),
   };
+
+  /* `?ai=1` asks Google whether the configured key is actually accepted FROM
+     THIS SERVER. `configured: true` only means the variable is set, and the
+     gap between those two is exactly where an hour goes: a key that works from
+     a laptop can be rejected from a lambda (wrong value pasted, a credential
+     bound to its origin, a short-lived token). One URL turns that into a fact.
+     It lists models rather than generating, so it costs nothing. */
+  if (probeAi) {
+    const probe = await probeGemini();
+    return NextResponse.json({ ...base, probe }, { status: probe.ok ? 200 : 503 });
+  }
 
   if (!deep) return NextResponse.json(base);
 

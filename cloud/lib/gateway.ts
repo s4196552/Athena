@@ -1,4 +1,5 @@
 import 'server-only';
+import { formatNumber } from './format';
 
 /* The demo gateway's health endpoint is unauthenticated and reports capacity,
  * never content -- so the landing page can show whether the model-backed half
@@ -54,7 +55,7 @@ export async function getGatewayStatus(): Promise<GatewayStatus> {
       message:
         left === null
           ? `Demo gateway is up — ${model}.`
-          : `Demo gateway is up — ${model}, ${left.toLocaleString()} analyses left today.`,
+          : `Demo gateway is up — ${model}, ${formatNumber(left)} analyses left today.`,
     };
   } catch {
     // A sleeping gateway is the expected state for a free Railway dyno, not an

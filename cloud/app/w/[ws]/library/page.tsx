@@ -4,7 +4,7 @@ import { requireSession } from '@/lib/auth';
 import { workspaceContext } from '@/lib/data/context';
 import { getRepository } from '@/lib/data';
 import { parseFilterParams, toSearchParams, hasAnyFilter } from '@/lib/filter/params';
-import { formatCount } from '@/lib/format';
+import { formatCount, formatNumber } from '@/lib/format';
 import { library } from '@/lib/data/json/load';
 import { TagIcon, Icon } from '@/lib/icons';
 import { LibraryBrowser, type FileView, type TagView } from '@/components/library/LibraryBrowser';
@@ -160,7 +160,7 @@ export default async function LibraryPage({
                   >
                     <TagIcon kind={group.kind} name={v.name} size={13} />
                     {v.display}
-                    <span className={s.chipCount}>{v.count.toLocaleString()}</span>
+                    <span className={s.chipCount}>{formatNumber(v.count)}</span>
                   </Link>
                 );
               })}
@@ -227,8 +227,8 @@ export default async function LibraryPage({
 
         {page.nextCursor && (
           <p className={s.more}>
-            Showing the first {page.files.length.toLocaleString()} of{' '}
-            {page.total.toLocaleString()}.
+            Showing the first {formatNumber(page.files.length)} of{' '}
+            {formatNumber(page.total)}.
           </p>
         )}
       </main>

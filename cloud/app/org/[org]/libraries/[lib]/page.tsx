@@ -3,7 +3,7 @@ import { notFound } from 'next/navigation';
 import { requireSession } from '@/lib/auth';
 import { getRepository } from '@/lib/data';
 import { describeScope } from '@/lib/data/json/scope';
-import { formatBytes } from '@/lib/format';
+import { formatBytes, formatNumber } from '@/lib/format';
 import s from './sharing.module.css';
 
 export const dynamic = 'force-dynamic';
@@ -70,8 +70,8 @@ export default async function LibrarySharingPage({
       </p>
       <h1 className={s.h1}>{lib.name}</h1>
       <p className={s.sub}>
-        Indexed from <code>{lib.rootLabel}</code> · {lib.fileCount.toLocaleString()} files ·{' '}
-        {lib.tagCount.toLocaleString()} tags · {formatBytes(lib.bytes)} ·{' '}
+        Indexed from <code>{lib.rootLabel}</code> · {formatNumber(lib.fileCount)} files ·{' '}
+        {formatNumber(lib.tagCount)} tags · {formatBytes(lib.bytes)} ·{' '}
         <span className={s.ok}>{lib.mutations} files modified</span>
       </p>
 
@@ -112,7 +112,7 @@ export default async function LibrarySharingPage({
                   </td>
                   <td><code>{r.access}</code></td>
                   <td className={s.scope}>{r.scope}</td>
-                  <td className={s.num}>{r.visible.toLocaleString()}</td>
+                  <td className={s.num}>{formatNumber(r.visible)}</td>
                   <td className={s.num}>
                     <span className={s.bar}>
                       <span

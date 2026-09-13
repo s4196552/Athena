@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import { useLocalSetting } from '@/lib/useLocalSetting';
-import { formatBytes, formatDate } from '@/lib/format';
+import { formatBytes, formatDate, formatNumber } from '@/lib/format';
 import { Icon, TagIcon, iconForMedia } from '@/lib/icons';
 import { FileDetail, type AlbumMembership } from './FileDetail';
 import s from './browser.module.css';
@@ -143,7 +143,7 @@ export function LibraryBrowser({
         <>
           {mode === 'auto' && rest.length > 0 && (
             <h2 className={s.sectionLabel}>
-              Photos &amp; video <span className={s.sectionCount}>{media.length.toLocaleString()}</span>
+              Photos &amp; video <span className={s.sectionCount}>{formatNumber(media.length)}</span>
             </h2>
           )}
           <div
@@ -180,7 +180,7 @@ export function LibraryBrowser({
         <>
           {mode === 'auto' && media.length > 0 && (
             <h2 className={s.sectionLabel}>
-              Documents &amp; other <span className={s.sectionCount}>{rest.length.toLocaleString()}</span>
+              Documents &amp; other <span className={s.sectionCount}>{formatNumber(rest.length)}</span>
             </h2>
           )}
           <div className={s.listWrap}>

@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { Icon } from '@/lib/icons';
 import { createAlbum, deleteAlbum, renameAlbum } from '@/app/w/[ws]/actions';
 import s from './albums.module.css';
+import { formatNumber } from '@/lib/format';
 
 export interface AlbumView {
   id: string;
@@ -103,7 +104,7 @@ export function AlbumRail({
                       className={s.itemIcon}
                     />
                     <span className={s.itemName}>{album.name}</span>
-                    <span className={s.itemCount}>{album.count.toLocaleString()}</span>
+                    <span className={s.itemCount}>{formatNumber(album.count)}</span>
                   </Link>
                   {canEdit && (
                     <span className={s.itemTools}>
