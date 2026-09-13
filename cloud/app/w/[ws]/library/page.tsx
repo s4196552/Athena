@@ -7,8 +7,9 @@ import { parseFilterParams, toSearchParams, hasAnyFilter } from '@/lib/filter/pa
 import { PAGE_SIZE } from '@/lib/data/repository';
 import { formatCount, formatNumber } from '@/lib/format';
 import { library } from '@/lib/data/json/load';
+import { lensedTags } from '@/lib/data/lens';
 import { TagIcon, Icon } from '@/lib/icons';
-import { LibraryBrowser, type FileView, type TagView } from '@/components/library/LibraryBrowser';
+import { LibraryBrowser, type FileView } from '@/components/library/LibraryBrowser';
 import { AlbumRail, type AlbumView } from '@/components/library/AlbumRail';
 import { BriefPanel } from '@/components/library/BriefPanel';
 import { elevenLabsStatus } from '@/lib/ai/elevenlabs';
@@ -136,20 +137,10 @@ export default async function LibraryPage({
      to show a suppressed tag in order to offer the undo, and the repository
      has already dropped it from everything else. */
   const views: FileView[] = page.files.map((f) => {
-    const own = (f.userTags ?? [])
-      .filter((u) => u.workspaceId === ctx.workspace.id)
-      .map((u) => u.tagId);
-
-    const tags: TagView[] = [];
-    const removed: TagView[] = [];
-    for (const id of [...f.tags, ...own]) {
-      const t = tagById.get(id);
-      if (!t) continue;
-      const view: TagView = {
-        id, kind: t.kind, name: t.name, display: t.displayName, user: own.includes(id),
-      };
-      (ctx.isRemoved(f.id, id) ? removed : tags).push(view);
-    }
+    /* One lens, shared with /api/v1 -- see lib/data/lens.ts. This used to be
+       five lines here that forgot ctx.addedTags, so a tag accepted from the
+       agent was counted in the rail beside a file that did not show it. */
+    const { tags, removed } = lensedTags(ctx, f, tagById);
 
     const doctype = tags.find((t) => t.kind === 'doctype');
     return {

@@ -18,7 +18,8 @@
     "check:speech": "tsx scripts/check-speakable.mts",
     "check:related": "tsx scripts/check-related.mts",
     "icons": "tsx scripts/fetch-icons.mts",
-    "verify": "node tests/verify.mjs"
+    "verify": "node tests/verify.mjs",
+    "cli": "tsx cli/athena.mts"
   },
   "dependencies": {
     "d3-force": "^3.0.0",

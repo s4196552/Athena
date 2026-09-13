@@ -757,6 +757,173 @@ section('the agent: ask, explain, relate');
 }
 
 
+// ===========================================================================
+section('the v1 API, which the CLI talks to');
+// ===========================================================================
+{
+  const api = (path, cookie, init = {}) => fetch(`${BASE}/api/v1${path}`, {
+    headers: {
+      accept: 'application/json',
+      ...(init.body ? { 'content-type': 'application/json' } : {}),
+      ...(cookie ? { cookie } : {}),
+    },
+    redirect: 'manual',
+    ...init,
+  });
+
+  const apiJson = async (path, cookie, init) => {
+    const res = await api(path, cookie, init);
+    const text = await res.text();
+    let data = null;
+    try { data = JSON.parse(text); } catch { /* asserted below */ }
+    return { status: res.status, data, res };
+  };
+
+  /* Every route answers JSON, including its failures. A CLI that gets an HTML
+     login page where it expected an object cannot report anything useful, and
+     the page equivalents DO redirect -- which is right for a browser and the
+     reason these routes exist separately. */
+  const anon = await apiJson('/me');
+  check('the API refuses a signed-out caller with JSON',
+    anon.status === 401 && typeof anon.data?.error === 'string',
+    `status ${anon.status}`);
+  check('and does not redirect to the login page',
+    !anon.res.headers.get('location'),
+    'a 307 would be parsed as an answer by anything following redirects');
+  check('the refusal says what to do about it', typeof anon.data?.hint === 'string');
+
+  /* The account list is published only while the deployment runs on fixtures.
+     The CLI reads it instead of hardcoding one -- the first draft hardcoded
+     five addresses on the wrong domain and every one failed to sign in. */
+  const accounts = await apiJson('/accounts');
+  check('the demo accounts are published for a client with no screen',
+    accounts.status === 200 && Array.isArray(accounts.data?.accounts)
+      && accounts.data.accounts.length > 0,
+    `${accounts.data?.accounts?.length ?? 0} accounts`);
+  check('each account says which workspaces it reaches',
+    (accounts.data?.accounts ?? []).every((a) => Array.isArray(a.workspaces)),
+    'a list of addresses with no distinction makes everyone pick the first');
+  /* Asserted on the SHAPE rather than by grepping for the word "password":
+     the reply legitimately carries a `passwordRequired` flag, so a keyword
+     scan fails on its own field name while a stray hash in an account object
+     would slip past a sloppier pattern. */
+  check('an account carries only what a picker needs',
+    (accounts.data?.accounts ?? []).every((a) =>
+      Object.keys(a).sort().join(',') === 'email,name,workspaces'),
+    Object.keys(accounts.data?.accounts?.[0] ?? {}).join(','));
+  check('and the reply says whether a password is needed',
+    accounts.data?.passwordRequired === false);
+
+  /* THE LOGIN ROUND TRIP. The whole CLI rests on this one exchange: post an
+     email, get a cookie back, and have that cookie work on the next call. */
+  const first = accounts.data.accounts[0];
+  const loginRes = await api('/login', null, {
+    method: 'POST',
+    body: JSON.stringify({ email: first.email }),
+  });
+  check('login accepts a fixture email', loginRes.status === 200, `status ${loginRes.status}`);
+
+  const setCookie = (loginRes.headers.getSetCookie?.() ?? [])
+    .find((c) => c.startsWith('athena_session='));
+  check('login issues a session cookie', Boolean(setCookie));
+  check('the session cookie is HttpOnly', /httponly/i.test(setCookie ?? ''),
+    'a CLI does not need script access to it and a browser must not have it');
+
+  if (setCookie) {
+    const minted = setCookie.split(';')[0];
+    const me = await apiJson('/me', minted);
+    check('and that cookie works on the next call',
+      me.status === 200 && me.data?.user?.email === first.email,
+      `${me.status}, ${me.data?.user?.email ?? 'no user'}`);
+    check('me reports the workspaces it can reach',
+      Array.isArray(me.data?.workspaces) && me.data.workspaces.length > 0);
+  }
+
+  const bad = await apiJson('/login', null, {
+    method: 'POST',
+    body: JSON.stringify({ email: 'nobody@nowhere.example' }),
+  });
+  check('login refuses an unknown email', bad.status === 401, `status ${bad.status}`);
+
+  // --- the catalogue, through the API ---------------------------------------
+
+  const outside = await apiJson('/w/hadesmedia-ops/files', priya);
+  check('the API hides a workspace the caller is not in',
+    outside.status === 404, `status ${outside.status}`);
+
+  /* THE NUMBERS MUST MATCH THE PAGE. The API and the library page are two
+     renderings of one repository call, and a client that reported a different
+     total from the browser would be worse than no client. */
+  const apiFiles = await apiJson('/w/hadesmedia-ops/files?doctype=invoice', iris);
+  const pageFiles = await get('/w/hadesmedia-ops/library?doctype=invoice', iris);
+  const pageCount = pageFiles.body.match(/([\d,]+)\s+items?/);
+  check('the API total matches what the page prints',
+    apiFiles.status === 200 && !!pageCount
+      && apiFiles.data.total === Number(pageCount[1].replace(/,/g, '')),
+    `api ${apiFiles.data?.total}, page ${pageCount?.[1]}`);
+
+  check('the filter is echoed back as the server understood it',
+    apiFiles.data?.filter?.doctype === 'invoice',
+    'a mistyped axis is ignored by the parser and otherwise looks like a match');
+
+  /* An unbounded limit turns one request into the whole catalogue. 6,120
+     records here; worse on a real library. */
+  const greedy = await apiJson('/w/hadesmedia-ops/files?limit=999999', iris);
+  check('limit is capped rather than honoured',
+    greedy.status === 200 && greedy.data.files.length <= 500,
+    `asked for everything, got ${greedy.data?.files?.length}`);
+
+  // Tenancy, asserted through the API rather than only through the pages.
+  const mkt = await apiJson('/w/hadesmedia-marketing/files', iris);
+  check('two workspaces see different amounts of one catalogue',
+    mkt.status === 200 && apiFiles.status === 200
+      && mkt.data.total !== greedy.data.total,
+    `marketing ${mkt.data?.total}, ops ${greedy.data?.total}`);
+
+  const facets = await apiJson('/w/hadesmedia-ops/facets?doctype=invoice', iris);
+  check('facets come back for a filtered selection',
+    facets.status === 200 && (facets.data?.axes?.length ?? 0) > 0,
+    `${facets.data?.axes?.length ?? 0} axes`);
+  check('facet values carry no tag ids',
+    !/\btagId\b/.test(JSON.stringify(facets.data ?? {})),
+    'ids are a driver detail and are not stable across a reseed');
+
+  const one = apiFiles.data?.files?.[0];
+  if (one) {
+    const detail = await apiJson(`/w/hadesmedia-ops/files/${one.id}`, iris);
+    check('a file comes back with its tags and neighbours',
+      detail.status === 200 && detail.data?.file?.id === one.id
+        && Array.isArray(detail.data?.related));
+    check('related files are scored between 0 and 1',
+      (detail.data?.related ?? []).every((r) => r.score > 0 && r.score <= 1.0001),
+      `top ${detail.data?.related?.[0]?.score?.toFixed(3) ?? 'none'}`);
+    check('and every one names what it shares',
+      (detail.data?.related ?? []).every((r) => Array.isArray(r.shared) && r.shared.length));
+  }
+
+  const missing = await apiJson('/w/hadesmedia-ops/files/f_does_not_exist', iris);
+  check('an unknown file id is a 404, not an empty object',
+    missing.status === 404, `status ${missing.status}`);
+
+  /* The counted brief costs nothing with model=off, so it is safe to assert on
+     every run. The model-backed half is exercised by hand, not here -- a test
+     suite that spends the day's budget is a test suite people stop running. */
+  const brief = await apiJson('/w/hadesmedia-ops/brief?doctype=invoice&model=off', iris);
+  check('a brief can be produced without spending a model call',
+    brief.status === 200 && brief.data?.producedBy === 'counted'
+      && brief.data.files > 0,
+    `${brief.data?.files} files, by ${brief.data?.producedBy}`);
+  check('the brief body carries the counts',
+    typeof brief.data?.body === 'string' && brief.data.body.includes('###'));
+
+  /* The two spending verbs are POST, deliberately: a model call behind a GET
+     is a URL that costs money when a crawler or a link preview touches it. */
+  const askViaGet = await api('/w/hadesmedia-ops/ask?question=hello', iris);
+  check('the spending endpoints refuse GET',
+    askViaGet.status === 405, `status ${askViaGet.status}`);
+}
+
+
 console.log(
   `\n${failures === 0 ? `all ${checks} checks passed` : `${failures} of ${checks} FAILED`}\n`,
 );
