@@ -2,7 +2,7 @@
   min-height: 100dvh;
   display: grid;
   place-items: center;
-  padding: 40px 20px;
+  padding: var(--space-7) var(--space-5);
 }
 
 .card {
@@ -13,8 +13,8 @@
 .brand {
   display: flex;
   align-items: center;
-  gap: 11px;
-  margin-bottom: 28px;
+  gap: var(--space-3);
+  margin-bottom: var(--space-6);
   text-decoration: none;
   color: var(--text);
 }
@@ -29,15 +29,15 @@
   letter-spacing: var(--ls-title-1); font-weight: 700;
   margin: 0 0 var(--space-2);
 }
-.sub { color: var(--muted); font-size: var(--fs-callout); margin: 0 0 22px; }
+.sub { color: var(--muted); font-size: var(--fs-callout); margin: 0 0 var(--space-5); }
 
-.form { display: flex; flex-direction: column; gap: 12px; }
+.form { display: flex; flex-direction: column; gap: var(--space-3); }
 
-.field { display: flex; flex-direction: column; gap: 6px; }
+.field { display: flex; flex-direction: column; gap: var(--space-2); }
 .label { font-size: var(--fs-footnote); color: var(--muted); }
 .input {
   width: 100%;
-  padding: 10px 12px;
+  padding: var(--space-3) var(--space-3);
   font: inherit;
   font-size: var(--fs-callout);
   color: var(--text);
@@ -53,8 +53,8 @@
 .input:focus-visible { box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent); }
 
 .submit {
-  margin-top: 4px;
-  padding: 11px 18px;
+  margin-top: var(--space-1);
+  padding: var(--space-3) var(--space-4);
   font: inherit;
   font-size: var(--fs-callout);
   font-weight: 500;
@@ -73,7 +73,7 @@
   background: color-mix(in srgb, var(--danger) 12%, transparent);
   border: 1px solid color-mix(in srgb, var(--danger) 38%, transparent);
   border-radius: 8px;
-  padding: 9px 12px;
+  padding: var(--space-2) var(--space-3);
 }
 
 .note {
@@ -83,13 +83,13 @@
   border: 1px solid var(--line);
   border-left: 3px solid var(--warn);
   border-radius: 8px;
-  padding: 10px 12px;
+  padding: var(--space-3) var(--space-3);
   line-height: 1.5;
 }
 
 .divider {
-  display: flex; align-items: center; gap: 10px;
-  margin: 24px 0 14px;
+  display: flex; align-items: center; gap: var(--space-3);
+  margin: var(--space-5) 0 var(--space-4);
   font-size: var(--fs-caption); text-transform: uppercase; letter-spacing: var(--ls-eyebrow);
   color: var(--faint);
 }
@@ -97,11 +97,11 @@
   content: ''; flex: 1; height: 1px; background: var(--line-soft);
 }
 
-.chips { display: flex; flex-direction: column; gap: 7px; }
+.chips { display: flex; flex-direction: column; gap: var(--space-2); }
 .chip {
-  display: flex; align-items: center; gap: 10px;
+  display: flex; align-items: center; gap: var(--space-3);
   width: 100%;
-  padding: 9px 11px;
+  padding: var(--space-2) var(--space-3);
   font: inherit;
   font-size: var(--fs-subhead);
   text-align: left;
@@ -120,8 +120,8 @@
 .chipName { font-weight: 500; }
 .chipWhere { color: var(--faint); font-size: var(--fs-footnote); }
 
-.alt { margin-top: 22px; font-size: var(--fs-subhead); color: var(--muted); text-align: center; }
+.alt { margin-top: var(--space-5); font-size: var(--fs-subhead); color: var(--muted); text-align: center; }
 
-.pending { margin: 12px 0 0; font-size: var(--fs-subhead); color: var(--muted); text-align: center; }
+.pending { margin: var(--space-3) 0 0; font-size: var(--fs-subhead); color: var(--muted); text-align: center; }
 .chips form { margin: 0; }
 .chips .chip { width: 100%; }

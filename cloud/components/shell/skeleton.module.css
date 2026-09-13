@@ -40,39 +40,39 @@
 .rail {
   width: 236px; flex: 0 0 auto;
   border-right: 1px solid var(--line-soft);
-  padding: 16px 14px 60px;
+  padding: var(--space-4) var(--space-4) var(--space-8);
 }
-.railGroup { margin-bottom: 18px; }
-.railLabel { height: 9px; width: 60px; margin-bottom: 9px; }
-.chips { display: flex; flex-wrap: wrap; gap: 5px; }
+.railGroup { margin-bottom: var(--space-4); }
+.railLabel { height: 9px; width: 60px; margin-bottom: var(--space-2); }
+.chips { display: flex; flex-wrap: wrap; gap: var(--space-1); }
 .chip { height: 24px; border-radius: 999px; }
 
-.main { flex: 1; min-width: 0; padding: 16px 20px 64px; }
-.head { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; }
+.main { flex: 1; min-width: 0; padding: var(--space-4) var(--space-5) var(--space-8); }
+.head { display: flex; align-items: center; gap: var(--space-3); margin-bottom: var(--space-4); }
 .count { height: 14px; width: 120px; }
 .spacer { flex: 1; }
 .button { height: 30px; width: 104px; border-radius: 7px; }
 
 .grid {
-  display: grid; gap: 12px;
+  display: grid; gap: var(--space-3);
   grid-template-columns: repeat(auto-fill, minmax(158px, 1fr));
 }
 .tile { aspect-ratio: 4 / 3; border-radius: 8px; }
-.caption { height: 10px; width: 70%; margin-top: 7px; }
+.caption { height: 10px; width: 70%; margin-top: var(--space-2); }
 
 /* ---------- workspace overview ---------- */
-.wrap { max-width: 1040px; margin: 0 auto; padding: 26px 20px 64px; }
-.title { height: 24px; width: 220px; margin-bottom: 10px; }
-.sub { height: 12px; width: 300px; margin-bottom: 26px; }
-.stats { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); }
+.wrap { max-width: 1040px; margin: 0 auto; padding: var(--space-5) var(--space-5) var(--space-8); }
+.title { height: 24px; width: 220px; margin-bottom: var(--space-3); }
+.sub { height: 12px; width: 300px; margin-bottom: var(--space-5); }
+.stats { display: grid; gap: var(--space-3); grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); }
 .stat { height: 86px; border-radius: 10px; }
-.section { margin-top: 30px; }
+.section { margin-top: var(--space-6); }
 .panel { height: 150px; border-radius: 10px; }
 
 /* ---------- graph ---------- */
 .canvas {
   height: calc(100dvh - var(--topbar) - 96px);
-  margin: 16px 20px;
+  margin: var(--space-4) var(--space-5);
   border-radius: 12px;
 }
 

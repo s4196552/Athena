@@ -234,9 +234,22 @@
    * 480 / 640 / 720 / 900 / 1200. */
   --page-max: 1040px;
   --measure: 68ch;
+  /* The docked file inspector. Named because the browser has to reserve room
+     for it, and that reservation was the literal 356px -- this width plus a
+     gap -- sitting in another stylesheet with no way to know it was derived. */
+  --detail-panel: 340px;
   --gutter: var(--space-5);
   --topbar: 52px;
+}
 
+/* One side gutter, narrower where the screen is. Declared here rather than in
+   each stylesheet so a page cannot quietly keep 20px while its neighbour
+   moves. */
+@media (max-width: 640px) {
+  :root { --gutter: var(--space-4); }
+}
+
+:root {
   /* Tag-kind colours. The defaults for the graph's colour groups in tag mode,
    * lifted from KIND_COLOUR in athena/web/static/app.js so a tag graph here
    * looks like the same graph there. These are DATA, not chrome: they are also

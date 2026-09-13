@@ -1,19 +1,19 @@
 /* Room for the detail panel. Only above the width where the panel docks to
    the side -- below it, it docks to the bottom and needs no gutter. */
 @media (min-width: 641px) {
-  .shifted { padding-right: 356px; }
+  .shifted { padding-right: calc(var(--detail-panel) + var(--space-4)); }
 }
 
 /* ---------- controls ---------- */
 .controls {
-  display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
-  margin-bottom: 16px;
+  display: flex; align-items: center; gap: var(--space-4); flex-wrap: wrap;
+  margin-bottom: var(--space-4);
 }
 
 .modes { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
 .mode {
-  display: inline-flex; align-items: center; gap: 5px;
-  padding: 5px 11px; font: inherit; font-size: var(--fs-subhead);
+  display: inline-flex; align-items: center; gap: var(--space-1);
+  padding: var(--space-1) var(--space-3); font: inherit; font-size: var(--fs-subhead);
   color: var(--muted); background: transparent; border: 0; cursor: pointer;
 }
 .mode:hover { color: var(--text); background: var(--fill-2); }
@@ -21,7 +21,7 @@
 
 /* The iCloud/Finder zoom control: a small square, a slider, a larger square.
    No numbers -- the sizes are a feel, not a measurement. */
-.sizer { display: inline-flex; align-items: center; gap: 8px; }
+.sizer { display: inline-flex; align-items: center; gap: var(--space-2); }
 .sizer input { width: 116px; cursor: pointer; }
 .sizer input:disabled { opacity: .35; cursor: default; }
 .sizeIcon { font-size: var(--fs-caption); color: var(--faint); line-height: 1; }
@@ -29,10 +29,10 @@
 
 /* ---------- section headings (auto mode only) ---------- */
 .sectionLabel {
-  display: flex; align-items: baseline; gap: 8px;
+  display: flex; align-items: baseline; gap: var(--space-2);
   font-size: var(--fs-caption); text-transform: uppercase; letter-spacing: var(--ls-eyebrow);
   color: var(--faint); font-weight: 600;
-  margin: 26px 0 10px;
+  margin: var(--space-5) 0 var(--space-3);
 }
 .sectionLabel:first-of-type { margin-top: 0; }
 .sectionCount {
@@ -43,7 +43,7 @@
 /* ---------- grid ---------- */
 /* grid-template-columns is set inline from the size slider, so the tile width
    is one number in one place rather than five CSS classes. */
-.grid { display: grid; gap: 12px; }
+.grid { display: grid; gap: var(--space-3); }
 .card { min-width: 0; }
 /* A button, not a div: the tile opens the detail panel, so it has to be
    reachable by keyboard and announced as something you can press. */
@@ -52,7 +52,7 @@
   aspect-ratio: 4 / 3; border-radius: 8px;
   border: 1px solid var(--line);
   display: grid; place-items: center;
-  margin-bottom: 6px; padding: 0; cursor: pointer;
+  margin-bottom: var(--space-2); padding: 0; cursor: pointer;
 }
 .thumbOn { border-color: var(--ws-accent, var(--accent)); box-shadow: 0 0 0 2px var(--accent-dim); }
 
@@ -66,7 +66,7 @@
 .ext {
   font-size: var(--fs-caption); text-transform: uppercase; letter-spacing: var(--ls-eyebrow);
   color: #ffffffcc; font-weight: 600;
-  background: #0009; border-radius: 4px; padding: 2px 6px;
+  background: #0009; border-radius: 4px; padding: 2px var(--space-2);
 }
 .name {
   margin: 0 0 2px; font-size: var(--fs-footnote); font-weight: 500;
@@ -84,7 +84,7 @@
 }
 .list { width: 100%; border-collapse: collapse; font-size: var(--fs-subhead); }
 .list th, .list td {
-  text-align: left; padding: 6px 12px; vertical-align: top;
+  text-align: left; padding: var(--space-2) var(--space-3); vertical-align: top;
   border-bottom: 1px solid var(--line-soft);
   white-space: nowrap;
 }
@@ -124,23 +124,23 @@
    clipped away entirely, leaving only the ellipsis that clipping produces. The
    whole point of showing tags in the row is spotting a wrong one without
    opening each file, so they get the room instead of being hidden. */
-.rowName { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.rowName { display: flex; align-items: center; gap: var(--space-2); min-width: 0; }
 .rowName > span:not(.badge) { overflow: hidden; text-overflow: ellipsis; }
 .badge {
   flex: 0 0 auto; display: grid; place-items: center;
-  color: #ffffffdd; border-radius: 4px; padding: 4px;
+  color: #ffffffdd; border-radius: 4px; padding: var(--space-1);
 }
 
-.kindCell { display: inline-flex; align-items: center; gap: 6px; }
+.kindCell { display: inline-flex; align-items: center; gap: var(--space-2); }
 .kindIcon { color: var(--faint); }
 
 .rowTags {
-  display: flex; align-items: center; gap: 4px;
-  margin: 3px 0 0 28px; overflow: hidden;
+  display: flex; align-items: center; gap: var(--space-1);
+  margin: 3px 0 0 var(--space-6); overflow: hidden;
 }
 .machineTag, .userTag, .correctedTag {
   display: inline-flex; align-items: center; gap: 3px;
-  font-size: var(--fs-caption); padding: 1px 6px 1px 4px; border-radius: 999px;
+  font-size: var(--fs-caption); padding: 1px var(--space-2) 1px var(--space-1); border-radius: 999px;
   line-height: 1.5;
 }
 .machineTag { color: var(--faint); background: var(--bg-sunk); border: 1px solid var(--line-soft); }

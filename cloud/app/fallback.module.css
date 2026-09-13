@@ -11,7 +11,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 24px 20px 64px;
+  padding: var(--space-5) var(--space-5) var(--space-8);
 }
 
 /* Inside the workspace chrome the top bar is already on screen, so the panel
@@ -19,7 +19,7 @@
 .inset {
   min-height: calc(100dvh - var(--topbar));
   align-items: flex-start;
-  padding-top: 64px;
+  padding-top: var(--space-8);
 }
 
 .panel {
@@ -34,20 +34,20 @@
   text-transform: uppercase;
   letter-spacing: var(--ls-eyebrow);
   color: var(--muted);
-  margin: 0 0 10px;
+  margin: 0 0 var(--space-3);
 }
 
 .title {
   font-size: var(--fs-title-1);
   line-height: var(--lh-title-1);
   letter-spacing: var(--ls-title-1);
-  margin: 0 0 10px;
+  margin: 0 0 var(--space-3);
 }
 
 .body {
   color: var(--muted);
-  margin: 0 0 8px;
-  max-width: 68ch;
+  margin: 0 0 var(--space-2);
+  max-width: var(--measure);
 }
 
 .slug {
@@ -57,14 +57,14 @@
   background: var(--bg-sunk);
   border: 1px solid var(--line);
   border-radius: 6px;
-  padding: 1px 6px;
+  padding: 1px var(--space-2);
 }
 
 .actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 10px;
-  margin-top: 22px;
+  gap: var(--space-3);
+  margin-top: var(--space-5);
 }
 
 .btn,
@@ -72,7 +72,7 @@
   display: inline-flex;
   align-items: center;
   min-height: 38px;
-  padding: 9px 16px;
+  padding: var(--space-2) var(--space-4);
   border-radius: 8px;
   font: inherit;
   font-size: var(--fs-subhead);
@@ -100,8 +100,8 @@
 
 /* The error message itself, shown only when one is safe to show. */
 .detail {
-  margin-top: 22px;
-  padding: 10px 12px;
+  margin-top: var(--space-5);
+  padding: var(--space-3) var(--space-3);
   border: 1px solid var(--line);
   border-left: 2px solid var(--warn);
   border-radius: 6px;

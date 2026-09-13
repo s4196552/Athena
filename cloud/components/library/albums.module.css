@@ -2,12 +2,12 @@
   border: 1px solid var(--line);
   border-radius: 9px;
   background: var(--bg-raised);
-  margin-bottom: 18px;
+  margin-bottom: var(--space-4);
 }
 
 .summary {
-  display: flex; align-items: center; gap: 7px;
-  padding: 8px 10px; cursor: pointer; list-style: none;
+  display: flex; align-items: center; gap: var(--space-2);
+  padding: var(--space-2) var(--space-3); cursor: pointer; list-style: none;
   font-size: var(--fs-subhead); color: var(--text);
 }
 .summary::-webkit-details-marker { display: none; }
@@ -19,20 +19,20 @@
 .chevron { color: var(--faint); transition: transform .15s ease; }
 .wrap[open] .chevron { transform: rotate(180deg); }
 
-.panel { padding: 4px 8px 9px; border-top: 1px solid var(--line-soft); }
+.panel { padding: var(--space-1) var(--space-2) var(--space-2); border-top: 1px solid var(--line-soft); }
 
 .empty, .note {
-  margin: 8px 2px; font-size: var(--fs-caption); line-height: 1.5; color: var(--faint);
+  margin: var(--space-2) 2px; font-size: var(--fs-caption); line-height: 1.5; color: var(--faint);
 }
-.note { border-top: 1px solid var(--line-soft); padding-top: 7px; }
+.note { border-top: 1px solid var(--line-soft); padding-top: var(--space-2); }
 
-.list { list-style: none; margin: 6px 0; padding: 0; display: flex; flex-direction: column; gap: 2px; }
+.list { list-style: none; margin: var(--space-2) 0; padding: 0; display: flex; flex-direction: column; gap: 2px; }
 .item, .itemOn { display: flex; align-items: center; border-radius: 6px; }
 .itemOn { background: var(--accent-dim); }
 
 .link {
-  display: flex; align-items: center; gap: 6px; flex: 1; min-width: 0;
-  padding: 5px 6px; text-decoration: none; color: var(--muted); font-size: var(--fs-footnote);
+  display: flex; align-items: center; gap: var(--space-2); flex: 1; min-width: 0;
+  padding: var(--space-1) var(--space-2); text-decoration: none; color: var(--muted); font-size: var(--fs-footnote);
   border-radius: 6px;
 }
 .link:hover { color: var(--text); }
@@ -64,24 +64,24 @@
 .iconBtn::after { content: ''; position: absolute; inset: -5px; }
 @media (pointer: coarse) { .iconBtn::after { inset: -12px; } }
 
-.newForm, .renameForm { display: flex; gap: 4px; align-items: center; width: 100%; }
-.renameForm { padding: 2px 4px; }
+.newForm, .renameForm { display: flex; gap: var(--space-1); align-items: center; width: 100%; }
+.renameForm { padding: 2px var(--space-1); }
 .input {
   flex: 1; min-width: 0;
   background: var(--bg-sunk); border: 1px solid var(--line);
-  border-radius: 6px; padding: 5px 7px;
+  border-radius: 6px; padding: var(--space-1) var(--space-2);
   color: var(--text); font: inherit; font-size: var(--fs-footnote);
 }
 .input:focus { border-color: var(--ws-accent, var(--accent)); }
 
 .clear {
-  display: inline-flex; align-items: center; gap: 4px;
+  display: inline-flex; align-items: center; gap: var(--space-1);
   font-size: var(--fs-footnote); color: var(--muted); text-decoration: none;
-  padding: 4px 2px;
+  padding: var(--space-1) 2px;
 }
 .clear:hover { color: var(--text); }
 
-.error { margin: 6px 2px 0; font-size: var(--fs-footnote); color: var(--danger); line-height: 1.45; }
+.error { margin: var(--space-2) 2px 0; font-size: var(--fs-footnote); color: var(--danger); line-height: 1.45; }
 
 /* ---------- delete confirmation ----------
    An album is assembled by hand and nothing rebuilds it, so the destructive
@@ -89,8 +89,8 @@
    next to the thing being answered about, and it can be styled and read by a
    screen reader as a group. */
 .confirm {
-  display: flex; align-items: center; gap: 6px;
-  width: 100%; padding: 4px 6px;
+  display: flex; align-items: center; gap: var(--space-2);
+  width: 100%; padding: var(--space-1) var(--space-2);
   background: var(--bg-sunk);
   border: 1px solid var(--danger);
   border-radius: 7px;
@@ -102,7 +102,7 @@
 }
 .confirmYes, .confirmNo {
   font: inherit; font-size: var(--fs-footnote); cursor: pointer;
-  padding: 3px 8px; border-radius: 5px; min-height: 24px;
+  padding: 3px var(--space-2); border-radius: 5px; min-height: 24px;
   border: 1px solid transparent;
 }
 .confirmYes { color: var(--on-danger); background: var(--danger); font-weight: 600; }

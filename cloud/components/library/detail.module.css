@@ -1,9 +1,9 @@
 .panel {
   position: fixed; top: var(--topbar); right: 0; bottom: 0;
-  width: 340px; max-width: 92vw; z-index: 40;
+  width: var(--detail-panel); max-width: 92vw; z-index: 40;
   background: var(--bg-raised);
   border-left: 1px solid var(--line);
-  padding: 14px 16px 40px;
+  padding: var(--space-4) var(--space-4) var(--space-7);
   overflow-y: auto;
   box-shadow: -18px 0 40px var(--shadow-color);
 }
@@ -14,7 +14,7 @@
   }
 }
 
-.head { display: flex; align-items: flex-start; gap: 8px; margin-bottom: 14px; }
+.head { display: flex; align-items: flex-start; gap: var(--space-2); margin-bottom: var(--space-4); }
 .headIcon { color: var(--ws-accent, var(--accent)); margin-top: 2px; }
 .title {
   flex: 1; min-width: 0; margin: 0;
@@ -35,10 +35,10 @@
 .close::after { content: ''; position: absolute; inset: -5px; }
 @media (pointer: coarse) { .close::after { inset: -12px; } }
 
-.facts { margin: 0 0 18px; display: grid; gap: 0; }
+.facts { margin: 0 0 var(--space-4); display: grid; gap: 0; }
 .facts > div {
-  display: flex; gap: 10px; justify-content: space-between;
-  padding: 5px 0; border-bottom: 1px solid var(--line-soft); font-size: var(--fs-subhead);
+  display: flex; gap: var(--space-3); justify-content: space-between;
+  padding: var(--space-1) 0; border-bottom: 1px solid var(--line-soft); font-size: var(--fs-subhead);
 }
 .facts dt { color: var(--muted); margin: 0; flex: 0 0 auto; }
 .facts dd { margin: 0; text-align: right; min-width: 0; }
@@ -50,17 +50,17 @@
   font-size: var(--fs-footnote);
 }
 
-.section { margin-bottom: 20px; }
+.section { margin-bottom: var(--space-5); }
 .sectionLabel {
-  display: flex; align-items: center; gap: 8px;
+  display: flex; align-items: center; gap: var(--space-2);
   font-size: var(--fs-caption); text-transform: uppercase; letter-spacing: var(--ls-eyebrow);
-  color: var(--faint); font-weight: 600; margin: 0 0 9px;
+  color: var(--faint); font-weight: 600; margin: 0 0 var(--space-2);
 }
 .textBtn {
-  margin-left: auto; display: inline-flex; align-items: center; gap: 4px;
+  margin-left: auto; display: inline-flex; align-items: center; gap: var(--space-1);
   background: none; border: 0; cursor: pointer; color: var(--muted);
   font: inherit; font-size: var(--fs-caption); text-transform: none; letter-spacing: 0;
-  padding: 2px 4px; border-radius: 5px;
+  padding: 2px var(--space-1); border-radius: 5px;
 }
 .textBtn:hover { color: var(--text); background: var(--bg-sunk); }
 
@@ -72,10 +72,10 @@
 .textBtn::after { content: ''; position: absolute; inset: -4px -2px; }
 @media (pointer: coarse) { .textBtn::after { inset: -11px -2px; } }
 
-.tags { display: flex; flex-wrap: wrap; gap: 5px; }
+.tags { display: flex; flex-wrap: wrap; gap: var(--space-1); }
 .tag, .tagUser, .tagOff {
-  display: inline-flex; align-items: center; gap: 5px;
-  padding: 3px 5px 3px 8px; border-radius: 999px;
+  display: inline-flex; align-items: center; gap: var(--space-1);
+  padding: 3px var(--space-1) 3px var(--space-2); border-radius: 999px;
   font-size: var(--fs-footnote); color: var(--muted);
   background: var(--bg-sunk); border: 1px solid var(--line);
 }
@@ -102,15 +102,15 @@
 @media (pointer: coarse) { .tagX::after { inset: -13px; } }
 
 .removedLabel {
-  display: flex; align-items: center; gap: 5px;
+  display: flex; align-items: center; gap: var(--space-1);
   font-size: var(--fs-caption); text-transform: uppercase; letter-spacing: var(--ls-eyebrow);
-  color: var(--faint); font-weight: 600; margin: 14px 0 8px;
+  color: var(--faint); font-weight: 600; margin: var(--space-4) 0 var(--space-2);
 }
 
 .albums { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 1px; }
 .albumRow {
-  display: flex; align-items: center; gap: 7px;
-  padding: 5px 6px; border-radius: 6px; cursor: pointer; font-size: var(--fs-subhead);
+  display: flex; align-items: center; gap: var(--space-2);
+  padding: var(--space-1) var(--space-2); border-radius: 6px; cursor: pointer; font-size: var(--fs-subhead);
 }
 .albumRow:hover { background: var(--bg-sunk); }
 .albumRow input { accent-color: var(--ws-accent, var(--accent)); margin: 0; }
@@ -118,5 +118,5 @@
 .albumName { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 .none { color: var(--faint); font-size: var(--fs-footnote); margin: 0; }
-.note { margin: 10px 0 0; font-size: var(--fs-caption); line-height: 1.55; color: var(--faint); }
-.error { margin: 10px 0 0; font-size: var(--fs-footnote); color: var(--danger); line-height: 1.45; }
+.note { margin: var(--space-3) 0 0; font-size: var(--fs-caption); line-height: 1.55; color: var(--faint); }
+.error { margin: var(--space-3) 0 0; font-size: var(--fs-footnote); color: var(--danger); line-height: 1.45; }

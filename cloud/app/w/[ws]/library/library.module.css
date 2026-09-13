@@ -3,7 +3,7 @@
 .rail {
   width: 236px; flex: 0 0 auto;
   border-right: 1px solid var(--line-soft);
-  padding: 16px 14px 60px;
+  padding: var(--space-4) var(--space-4) var(--space-8);
   position: sticky; top: var(--topbar);
   max-height: calc(100dvh - var(--topbar));
   overflow-y: auto;
@@ -13,15 +13,15 @@
   .rail { width: 100%; position: static; max-height: none; border-right: 0; border-bottom: 1px solid var(--line-soft); }
 }
 
-.group { margin-bottom: 18px; }
+.group { margin-bottom: var(--space-4); }
 .groupLabel {
   font-size: var(--fs-caption); text-transform: uppercase; letter-spacing: var(--ls-eyebrow);
-  color: var(--faint); font-weight: 600; margin: 0 0 7px;
+  color: var(--faint); font-weight: 600; margin: 0 0 var(--space-2);
 }
-.chips { display: flex; flex-wrap: wrap; gap: 5px; }
+.chips { display: flex; flex-wrap: wrap; gap: var(--space-1); }
 .chip {
-  display: inline-flex; align-items: center; gap: 5px;
-  padding: 4px 8px 4px 6px; border-radius: 999px;
+  display: inline-flex; align-items: center; gap: var(--space-1);
+  padding: var(--space-1) var(--space-2) var(--space-1) var(--space-2); border-radius: 999px;
   font-size: var(--fs-footnote); text-decoration: none; color: var(--muted);
   background: var(--bg-raised); border: 1px solid var(--line);
 }
@@ -48,29 +48,29 @@
 .chip:active { transform: translateY(1px); }
 .chipCount { font-size: var(--fs-caption); opacity: .7; font-variant-numeric: tabular-nums; }
 
-.main { flex: 1; min-width: 0; padding: 16px 20px 64px; }
+.main { flex: 1; min-width: 0; padding: var(--space-4) var(--gutter) var(--space-8); }
 
-.head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; }
+.head { display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap; margin-bottom: var(--space-3); }
 .count { margin: 0; font-size: var(--fs-callout); color: var(--muted); }
 .spacer { flex: 1; }
 .linkBtn {
-  display: inline-flex; align-items: center; gap: 5px;
+  display: inline-flex; align-items: center; gap: var(--space-1);
   font-size: var(--fs-subhead); text-decoration: none; color: var(--text);
   background: var(--bg-raised); border: 1px solid var(--line);
-  border-radius: 7px; padding: 5px 10px;
+  border-radius: 7px; padding: var(--space-1) var(--space-3);
 }
 .linkBtn:hover { border-color: var(--accent-dim); }
 
-.active { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px; }
+.active { display: flex; flex-wrap: wrap; gap: var(--space-2); margin-bottom: var(--space-4); }
 .activeChip {
-  display: inline-flex; align-items: center; gap: 5px;
-  font-size: var(--fs-footnote); padding: 4px 9px 4px 7px; border-radius: 999px;
+  display: inline-flex; align-items: center; gap: var(--space-1);
+  font-size: var(--fs-footnote); padding: var(--space-1) var(--space-2) var(--space-1) var(--space-2); border-radius: 999px;
   text-decoration: none; color: var(--on-accent);
   background: var(--ws-accent, var(--accent));
 }
 
 .grid {
-  display: grid; gap: 12px;
+  display: grid; gap: var(--space-3);
   grid-template-columns: repeat(auto-fill, minmax(158px, 1fr));
 }
 .card { min-width: 0; }
@@ -78,12 +78,12 @@
   aspect-ratio: 4 / 3; border-radius: 8px;
   border: 1px solid var(--line);
   display: grid; place-items: center;
-  margin-bottom: 7px;
+  margin-bottom: var(--space-2);
 }
 .ext {
   font-size: var(--fs-caption); text-transform: uppercase; letter-spacing: var(--ls-eyebrow);
   color: #ffffffcc; font-weight: 600;
-  background: #0009; border-radius: 4px; padding: 2px 7px;
+  background: #0009; border-radius: 4px; padding: 2px var(--space-2);
 }
 .name {
   margin: 0 0 2px; font-size: var(--fs-subhead); font-weight: 500;
@@ -93,11 +93,11 @@
   margin: 0; font-size: var(--fs-footnote); color: var(--faint);
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
-.userTags { margin: 5px 0 0; display: flex; flex-wrap: wrap; gap: 4px; }
+.userTags { margin: var(--space-1) 0 0; display: flex; flex-wrap: wrap; gap: var(--space-1); }
 /* Ringed rather than filled, so a person's tag is visibly distinct from a
    machine's -- the same distinction asset_tag.source makes in the schema. */
 .userTag {
-  font-size: var(--fs-caption); padding: 1px 6px; border-radius: 999px;
+  font-size: var(--fs-caption); padding: 1px var(--space-2); border-radius: 999px;
   color: var(--ws-accent, var(--accent));
   border: 1px solid currentColor;
 }
@@ -108,18 +108,18 @@
    The count used to be the whole control: "Showing the first 120 of 2,971."
    with nothing to click, which left files 121 onwards unreachable. */
 .pager {
-  display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
-  margin-top: 22px; padding-top: 16px;
+  display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap;
+  margin-top: var(--space-5); padding-top: var(--space-4);
   border-top: 1px solid var(--line-soft);
 }
 .pagerCount {
   margin: 0; font-size: var(--fs-subhead); color: var(--muted);
   font-variant-numeric: tabular-nums;
 }
-.pagerButtons { margin-left: auto; display: flex; gap: 8px; }
+.pagerButtons { margin-left: auto; display: flex; gap: var(--space-2); }
 .pagerBtn {
-  display: inline-flex; align-items: center; gap: 4px;
-  min-height: 32px; padding: 6px 12px;
+  display: inline-flex; align-items: center; gap: var(--space-1);
+  min-height: 32px; padding: var(--space-2) var(--space-3);
   font-size: var(--fs-subhead); text-decoration: none; color: var(--text);
   background: var(--bg-raised); border: 1px solid var(--line);
   border-radius: 8px;
