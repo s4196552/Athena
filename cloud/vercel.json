@@ -1,7 +1,4 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-
-  "//": "Vercel reads vercel.json from the configured Root Directory, which is `cloud`. The repo-root vercel.json is therefore not read at all and has been deleted rather than left behind as config that lies about what deploys. Security headers are deliberately NOT here: vercel.json headers are not applied by `next dev`, so keeping them here would let dev and production disagree about CSP -- see cloud/next.config.ts. `framework` is pinned so that a stray config at the repo root can never re-trigger the Python detection that the old static setup existed to avoid.",
-
   "framework": "nextjs"
 }

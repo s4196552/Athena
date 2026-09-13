@@ -132,8 +132,22 @@ never a build step.
 
 Note also that Vercel reads `vercel.json` **from the Root Directory**. The
 repo-root one is therefore no longer read at all and has been deleted rather
-than left behind as config that lies about what deploys. `cloud/vercel.json`
-pins `framework: "nextjs"` and nothing else.
+than left behind as config that lies about what deploys.
+
+`cloud/vercel.json` pins `framework: "nextjs"` and nothing else. Two things
+about that file are deliberate and easy to undo by accident:
+
+- **No comment key.** JSON has no comments, and Vercel validates `vercel.json`
+  with `additionalProperties: false` -- a `"//"` key is rejected outright with
+  *"should NOT have additional property"*, and the deploy fails before it
+  builds. Explanations go here instead.
+- **No `headers` block.** Those live in `cloud/next.config.ts`, because
+  `vercel.json` headers are applied by Vercel's edge and therefore do not exist
+  under `next dev`. Keeping them here would let development and production
+  disagree about CSP, whose failure mode is a silently blank page.
+
+`framework` is pinned so a stray config elsewhere can never re-trigger the
+Python detection the old static setup existed to avoid.
 
 ### Environment
 
