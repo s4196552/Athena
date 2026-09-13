@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getRepository } from '@/lib/data';
 import { describeScope } from '@/lib/data/json/scope';
+import { DEMO_AUTH } from '@/lib/auth/mode';
 import type { UserId } from '@/lib/data/types';
 
 /* The deploy smoke test.
@@ -27,7 +28,12 @@ export async function GET(request: Request) {
     driver: process.env.ATHENA_DATA_DRIVER ?? 'json',
     runtime: process.version,
     commit: process.env.VERCEL_GIT_COMMIT_SHA ?? 'local',
-    authSecret: process.env.AUTH_SECRET ? 'set' : 'MISSING — sign-in will fail',
+    authSecret: process.env.AUTH_SECRET
+      ? 'set'
+      : DEMO_AUTH
+        ? 'unset — using the demo fallback key (fixture accounts only)'
+        : 'MISSING — sign-in will fail',
+    demoAuth: DEMO_AUTH,
   };
 
   if (!deep) return NextResponse.json(base);

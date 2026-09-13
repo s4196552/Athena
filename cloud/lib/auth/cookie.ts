@@ -10,31 +10,49 @@
  * is not a place to put anything that needs hiding.
  */
 
+import { DEMO_AUTH } from './mode';
+
 const COOKIE_NAME = 'athena_session';
 const MAX_AGE_SECONDS = 7 * 24 * 60 * 60;
 const VERSION = 1;
 
-/* A fresh clone should run with zero configuration, so development falls back
- * to a constant. Production must not: next.config.ts is not the right place to
- * throw for a runtime secret, so the check lives here, at first use. */
-const DEV_SECRET = 'athena-dev-secret-not-for-production';
+/* The fallback key, used only when no AUTH_SECRET is configured AND this
+ * deployment is running on fixture accounts (see ./mode.ts).
+ *
+ * It is committed, so it is public, so it is not a secret. That is acceptable
+ * for exactly one situation: signing sessions for demo identities that have no
+ * passwords and read a catalogue published in this same repository. Forging
+ * this cookie gets you a different fixture account looking at the same sample
+ * data the login screen hands out on request.
+ *
+ * The guard below is what keeps that from quietly becoming a real hole. */
+const DEMO_FALLBACK_KEY = 'athena-demo-fallback-not-a-security-boundary';
 
 let warned = false;
 
 function secret(): string {
-  const s = process.env.AUTH_SECRET;
-  if (s && s.length > 0) return s;
-  if (process.env.NODE_ENV === 'production') {
+  const configured = process.env.AUTH_SECRET;
+  if (configured && configured.length > 0) return configured;
+
+  // Real accounts, no configured secret: refuse, exactly as before. A shipped
+  // constant is a master key once the identities behind it mean something.
+  if (!DEMO_AUTH) {
     throw new Error(
-      'AUTH_SECRET is not set. Set it in the Vercel project environment ' +
-      'before deploying -- sessions cannot be signed without it.',
+      'AUTH_SECRET is not set, and DEMO_AUTH is false in lib/auth/mode.ts. '
+      + 'Set AUTH_SECRET in the hosting environment -- sessions for real '
+      + 'accounts cannot be signed with a committed key.',
     );
   }
+
   if (!warned) {
     warned = true;
-    console.warn('[auth] AUTH_SECRET unset — using the development fallback.');
+    console.warn(
+      '[auth] AUTH_SECRET unset — signing demo sessions with the built-in '
+      + 'fallback key. Fine for fixture accounts reading committed sample '
+      + 'data; set AUTH_SECRET (and DEMO_AUTH = false) before real ones exist.',
+    );
   }
-  return DEV_SECRET;
+  return DEMO_FALLBACK_KEY;
 }
 
 export interface SessionClaims {
