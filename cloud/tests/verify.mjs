@@ -483,6 +483,76 @@ section('tag corrections');
 }
 
 // ===========================================================================
+section('the agent');
+// ===========================================================================
+{
+  const strip = (h) => h.replace(/<!--[\s\S]*?-->/g, '');
+  const page = await get('/w/hadesmedia-ops/agent', iris);
+  const body = strip(page.body);
+
+  check('the agent page renders', page.status === 200);
+  check('it counts the gap across the whole library, not just the queue',
+    /Files with a gap/.test(body) && /No kind/.test(body) && /No topic/.test(body));
+
+  const rows = (body.match(/__item"/g) ?? []).length;
+  check('it queues files to review', rows > 0, `${rows} rows`);
+
+  /* The claim the page makes about itself has to stay true: it does not have
+     the engine's scores and must not imply that it does. */
+  check('it says what the model is actually given',
+    /cannot see the file/i.test(body) && /name_key/.test(body));
+  check('it offers no confidence number it does not have',
+    !/[^\d][01]\.\d\d[^\d]/.test(body));
+
+  check('the agent is reachable from the workspace nav', /&gt;Agent&lt;|>Agent</.test(body));
+
+  // A viewer may look but not accept. Same boundary as tag removal.
+  const asViewer = await get('/w/hadesmedia-finance/agent', tomas);
+  check('a read-only workspace still gets the queue', asViewer.status === 200);
+
+  /* AN ACCEPTED SUGGESTION IS THE MIRROR OF A REMOVAL.
+     The overlay cookie is plain text, so the effect can be asserted without
+     driving the server action -- exactly as the removal test does. `t` is the
+     additions section, added after `r` and `a` shipped without a version bump,
+     which only works because the decoder ignores section kinds it does not
+     know. */
+  const DESIGN = 14;
+  const countOf = (h) => Number((strip(h).match(/([\d,]+)\s+items?/)?.[1] ?? '0').replace(/,/g, ''));
+
+  const plain = await get('/w/hadesmedia-ops/library?topic=design', iris);
+  const all = await json('/api/w/hadesmedia-ops/graph?mode=files', iris);
+  const design = await json('/api/w/hadesmedia-ops/graph?mode=files&topic=design', iris);
+  const outsider = all.data.ids.find((id) => !design.data.ids.includes(id));
+
+  const added = `athena_ov_w_ops=1|t!${outsider}-${DESIGN.toString(36)}`;
+  const after = await get('/w/hadesmedia-ops/library?topic=design', `${iris}; ${added}`);
+  check('an accepted tag adds the file to that filter',
+    countOf(after.body) === countOf(plain.body) + 1,
+    `${countOf(plain.body)} -> ${countOf(after.body)}`);
+
+  // Same guarantee the removal has, pointed the other way: an addition is this
+  // workspace's opinion and must not reach anyone else's view of the library.
+  const mktPlain = await get('/w/hadesmedia-marketing/library?topic=design', priya);
+  const mktWithOps = await get('/w/hadesmedia-marketing/library?topic=design', `${priya}; ${added}`);
+  check('another workspace is unaffected by it',
+    countOf(mktWithOps.body) === countOf(mktPlain.body),
+    `Marketing stays at ${countOf(mktPlain.body)}`);
+
+  // Both opinions at once: the removal used to win, which would make an accept
+  // appear to work and do nothing. The action drops the removal; this asserts
+  // the read-time behaviour it relies on.
+  const both = `athena_ov_w_ops=1|r!${outsider}-${DESIGN.toString(36)}|t!${outsider}-${DESIGN.toString(36)}`;
+  const conflicted = await get('/w/hadesmedia-ops/library?topic=design', `${iris}; ${both}`);
+  check('a removal still wins over an addition of the same tag',
+    countOf(conflicted.body) === countOf(plain.body),
+    `${countOf(conflicted.body)} vs ${countOf(plain.body)} unfiltered`);
+
+  const junk = await get('/w/hadesmedia-ops/library?topic=design', `${iris}; athena_ov_w_ops=1|t!nope-zz`);
+  check('an addition naming no real file changes nothing',
+    countOf(junk.body) === countOf(plain.body));
+}
+
+// ===========================================================================
 section('albums');
 // ===========================================================================
 {

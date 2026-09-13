@@ -22,6 +22,7 @@ const ITEMS = [
   { href: '', label: 'Overview' },
   { href: '/library', label: 'Library' },
   { href: '/graph', label: 'Graph' },
+  { href: '/agent', label: 'Agent' },
   { href: '/settings/colors', label: 'Colours' },
 ];
 

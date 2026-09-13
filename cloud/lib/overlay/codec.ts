@@ -1,5 +1,5 @@
 import type { FileId, WorkspaceId } from '../data/types';
-import { emptyOverlay, MAX_ALBUM_FILES, MAX_ALBUMS, MAX_REMOVALS } from './types';
+import { emptyOverlay, MAX_ADDITIONS, MAX_ALBUM_FILES, MAX_ALBUMS, MAX_REMOVALS } from './types';
 import type { Album, Overlay } from './types';
 
 /* The cookie encoding.
@@ -13,7 +13,14 @@ import type { Album, Overlay } from './types';
  * ceiling -- base64 by a third, percent-encoding by more than that on the
  * braces and quotes. This format is already cookie-safe as written:
  *
- *   1 | r!<fileId>-<tagId base36>!... | a!<id>~<name>~<fileId>.<fileId>!...
+ *   1 | r!<fileId>-<tagId base36>!... | t!<fileId>-<tagId base36>!... | a!<id>~<name>~<fileId>.<fileId>!...
+ *
+ * `t` (additions) was added after `r` and `a` shipped, and the VERSION did not
+ * change. That is safe in both directions and deliberately so: the decoder
+ * loops over sections and ignores a kind it does not recognise, so an old
+ * cookie simply has no `t`, and a cookie written by this code and read by the
+ * previous build loses its additions rather than being discarded whole. A
+ * version bump would have thrown away every existing correction instead.
  *
  * Album names are the only free text, and they are percent-encoded, whose
  * output character set is cookie-safe by construction.
@@ -27,6 +34,12 @@ export function encodeOverlay(overlay: Overlay): string {
   if (overlay.removals.length) {
     parts.push(
       'r' + overlay.removals.map((r) => `!${r.fileId}-${r.tagId.toString(36)}`).join(''),
+    );
+  }
+
+  if (overlay.additions.length) {
+    parts.push(
+      't' + overlay.additions.map((a) => `!${a.fileId}-${a.tagId.toString(36)}`).join(''),
     );
   }
 
@@ -64,13 +77,15 @@ export function decodeOverlay(raw: string | undefined, workspaceId: WorkspaceId)
     const kind = section[0];
     const items = section.slice(1).split('!').filter(Boolean);
 
-    if (kind === 'r') {
-      for (const item of items.slice(0, MAX_REMOVALS)) {
+    if (kind === 'r' || kind === 't') {
+      const into = kind === 'r' ? overlay.removals : overlay.additions;
+      const cap = kind === 'r' ? MAX_REMOVALS : MAX_ADDITIONS;
+      for (const item of items.slice(0, cap)) {
         const cut = item.lastIndexOf('-');
         if (cut <= 0) continue;
         const tagId = parseInt(item.slice(cut + 1), 36);
         if (!Number.isFinite(tagId)) continue;
-        overlay.removals.push({ fileId: item.slice(0, cut) as FileId, tagId });
+        into.push({ fileId: item.slice(0, cut) as FileId, tagId });
       }
     } else if (kind === 'a') {
       for (const item of items.slice(0, MAX_ALBUMS)) {

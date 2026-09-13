@@ -60,6 +60,7 @@ async function withOverlay(
   const next: Overlay = {
     workspaceId: ctx.overlay.workspaceId,
     removals: [...ctx.overlay.removals],
+    additions: [...ctx.overlay.additions],
     albums: ctx.overlay.albums.map((a) => ({ ...a, fileIds: [...a.fileIds] })),
   };
 

@@ -9,7 +9,7 @@ import type {
   User, UserId, Org, OrgId, Workspace, WorkspaceId, Library, LibraryId,
   LibraryGrant, FileRecord, FileId, TagId, TagRecord, GraphMode, WorkspaceRole,
 } from '../types';
-import { emptyOverlay, removalIndex } from '../../overlay/types';
+import { additionIndex, emptyOverlay, removalIndex } from '../../overlay/types';
 import type { Overlay } from '../../overlay/types';
 import { TAG_AXES } from '../../taxonomy';
 
@@ -147,6 +147,7 @@ class JsonRepository implements AthenaRepository {
       ? overlay
       : emptyOverlay(workspace.id);
     const removed = removalIndex(own);
+    const added = additionIndex(own);
 
     return {
       userId,
@@ -157,6 +158,9 @@ class JsonRepository implements AthenaRepository {
       overlay: own,
       isRemoved(fileId: FileId, tagId: TagId) {
         return removed.get(fileId)?.has(tagId) ?? false;
+      },
+      addedTags(fileId: FileId) {
+        return added.get(fileId);
       },
       can(action) {
         // Effective permission is the lesser of what the role allows and what
@@ -191,7 +195,14 @@ class JsonRepository implements AthenaRepository {
   private tagIdsOf(f: FileRecord, ctx: WorkspaceContext): number[] {
     const workspaceId = ctx.workspace.id;
     const own = f.userTags?.filter((u) => u.workspaceId === workspaceId).map((u) => u.tagId) ?? [];
-    const all = own.length ? [...f.tags, ...own] : f.tags;
+    /* Additions accepted from the agent sit alongside the workspace's own user
+       tags: both are this workspace's opinion rather than a fact about the
+       file, and both enter the pipeline here so that everything downstream --
+       counts, facets, filters, the summary, both graph modes -- sees them
+       without knowing they exist. */
+    const accepted = [...(ctx.addedTags?.(f.id) ?? [])];
+    const mine = accepted.length ? [...own, ...accepted.filter((id) => !own.includes(id))] : own;
+    const all = mine.length ? [...f.tags, ...mine.filter((id) => !f.tags.includes(id))] : f.tags;
 
     /* THE chokepoint. Removals are applied here and nowhere else, which is why
        a suppressed tag disappears from the facet counts, from the filter

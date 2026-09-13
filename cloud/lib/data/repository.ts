@@ -34,6 +34,10 @@ export interface WorkspaceContext {
   /** Has this workspace suppressed this tag on this file? Precomputed, because
    *  it is asked once per tag per file on every listing. */
   isRemoved(fileId: FileId, tagId: TagId): boolean;
+  /** Tags this workspace has ADDED to this file -- an accepted agent proposal,
+   *  or anything else the workspace decided. Optional so a driver that has no
+   *  overlay at all still satisfies the contract. */
+  addedTags?(fileId: FileId): Set<TagId> | undefined;
   /** Effective permission: min(workspace role, grant access). */
   can(action: 'read' | 'tag' | 'manageGrants'): boolean;
 }

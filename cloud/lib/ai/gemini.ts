@@ -83,7 +83,18 @@ export class GeminiError extends Error {
 
 const TIMEOUT_MS = 20_000;
 
-export async function writeProse(prompt: string): Promise<BriefProse> {
+/* One schema-constrained call.
+ *
+ * Split out of writeProse when the agent needed the same plumbing with a
+ * different schema. Everything that is a property of HOW this server talks to
+ * Gemini lives here -- the key in a header, temperature 0, the timeout, the
+ * finishReason unwrapping -- so a second caller cannot get any of it subtly
+ * wrong. */
+export async function generate(
+  prompt: string,
+  schema: unknown,
+  maxOutputTokens: number,
+): Promise<unknown> {
   const key = geminiKey();
   if (!key) throw new GeminiError('GEMINI_API_KEY is not set');
 
@@ -96,9 +107,9 @@ export async function writeProse(prompt: string): Promise<BriefProse> {
       contents: [{ parts: [{ text: prompt }] }],
       generationConfig: {
         responseMimeType: 'application/json',
-        responseSchema: BRIEF_SCHEMA,
+        responseSchema: schema,
         temperature: 0,
-        maxOutputTokens: 700,
+        maxOutputTokens,
       },
     }),
     signal: AbortSignal.timeout(TIMEOUT_MS),
@@ -120,7 +131,11 @@ export async function writeProse(prompt: string): Promise<BriefProse> {
     throw new GeminiError(`Gemini returned no text${why ? ` (${why})` : ''}`);
   }
 
-  const parsed = JSON.parse(text);
+  return JSON.parse(text);
+}
+
+export async function writeProse(prompt: string): Promise<BriefProse> {
+  const parsed = (await generate(prompt, BRIEF_SCHEMA, 700)) as Record<string, unknown>;
   const clean = (v: unknown, limit: number) =>
     (Array.isArray(v) ? v : [])
       .filter((x): x is string => typeof x === 'string' && x.trim().length > 0)

@@ -26,6 +26,19 @@ export interface TagRemoval {
   tagId: TagId;
 }
 
+/** One (file, tag) pair this workspace has ADDED.
+ *
+ * The mirror image of a removal, and it exists for the same reason: the agent
+ * can propose that an untagged file is an invoice, but the catalogue is not
+ * ours to write to. An accepted proposal is this workspace's opinion, applied
+ * as a lens by the same chokepoint that applies removals, so the tag shows up
+ * in the facet counts, the filter algebra, the summary and both graph modes
+ * without any of them knowing where it came from. */
+export interface TagAddition {
+  fileId: FileId;
+  tagId: TagId;
+}
+
 export interface Album {
   id: string;
   name: string;
@@ -36,6 +49,7 @@ export interface Album {
 export interface Overlay {
   workspaceId: WorkspaceId;
   removals: TagRemoval[];
+  additions: TagAddition[];
   albums: Album[];
 }
 
@@ -45,21 +59,35 @@ export interface Overlay {
  * message, and these keep it from getting near the edge in normal use. */
 export const MAX_COOKIE_BYTES = 3800;
 export const MAX_REMOVALS = 400;
+/* Lower than MAX_REMOVALS on purpose. A removal is one correction a person made
+ * by hand; an addition arrives from a review queue where accepting is one
+ * click, so the realistic ceiling is reached far sooner and the cookie is the
+ * same 4 KB either way. */
+export const MAX_ADDITIONS = 200;
 export const MAX_ALBUMS = 20;
 export const MAX_ALBUM_FILES = 250;
 
 export function emptyOverlay(workspaceId: WorkspaceId): Overlay {
-  return { workspaceId, removals: [], albums: [] };
+  return { workspaceId, removals: [], additions: [], albums: [] };
 }
 
 /** Set of removed tag ids for one file. Built once per request by the caller
  *  that needs it, because the alternative is a linear scan per file per tag. */
 export function removalIndex(overlay: Overlay): Map<string, Set<number>> {
+  return pairIndex(overlay.removals);
+}
+
+/** The same, for additions. */
+export function additionIndex(overlay: Overlay): Map<string, Set<number>> {
+  return pairIndex(overlay.additions);
+}
+
+function pairIndex(pairs: { fileId: string; tagId: number }[]): Map<string, Set<number>> {
   const index = new Map<string, Set<number>>();
-  for (const r of overlay.removals) {
-    let set = index.get(r.fileId);
-    if (!set) index.set(r.fileId, (set = new Set()));
-    set.add(r.tagId);
+  for (const p of pairs) {
+    let set = index.get(p.fileId);
+    if (!set) index.set(p.fileId, (set = new Set()));
+    set.add(p.tagId);
   }
   return index;
 }
