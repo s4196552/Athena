@@ -28,9 +28,16 @@ docs = [
   "lxml>=5.2",
 ]
 # Tier 3 -- ML. Heavy; gated behind an explicit opt-in in the UI.
+#
+# `rapidocr`, not `rapidocr-onnxruntime`: the project renamed, and the old
+# distribution stopped at 1.2.3 with no wheel for Python 3.13 or 3.14, so
+# `pip install .[ml]` simply failed on a current interpreter. The two ship the
+# same models behind different imports and different return types --
+# athena/extractors/_ocr.py accepts either, so an environment that already has
+# the old one keeps working.
 ml = [
   "onnxruntime>=1.18",    # swap for onnxruntime-directml / -gpu per platform
-  "rapidocr-onnxruntime>=1.3",
+  "rapidocr>=2.0",
   "numpy>=1.26",
 ]
 watch = ["watchdog>=4.0"]

@@ -21,6 +21,7 @@ from typing import ClassVar, Iterator
 
 from ..core.facets import Facets
 from ..core.safety import reader_for
+from . import _ocr
 from .base import BaseExtractor, ExtractContext, Tier, register
 
 #: A page with fewer characters than this is treated as having no text layer --
@@ -114,11 +115,16 @@ class PdfOcr(BaseExtractor):
     version: ClassVar[int] = 1
     tier: ClassVar[int] = Tier.ML
     media_types: ClassVar[frozenset[str]] = frozenset({"document"})
-    requires: ClassVar[tuple[str, ...]] = ("pypdfium2", "rapidocr_onnxruntime")
+    # Only pypdfium2 is named: the OCR package is not one fixed name (see
+    # _ocr.py), so it is reported through missing_dependency instead.
+    requires: ClassVar[tuple[str, ...]] = ("pypdfium2",)
     max_bytes: ClassVar[int] = 512 * 1024 * 1024
 
     MAX_PAGES: ClassVar[int] = 50     # beyond this, index the front matter only
     RENDER_SCALE: ClassVar[float] = 2.0   # ~144 DPI, the floor for reliable OCR
+
+    def missing_dependency(self) -> str | None:
+        return super().missing_dependency() or _ocr.available()
 
     def supports(self, ctx: ExtractContext) -> bool:
         return super().supports(ctx) and _is_pdf(ctx)
@@ -130,9 +136,6 @@ class PdfOcr(BaseExtractor):
         import numpy as np
         import pypdfium2 as pdfium
 
-        from .images import ImageOcr
-
-        engine = ImageOcr.engine()
         doc = pdfium.PdfDocument(reader_for(ctx.path))
         try:
             pages = min(len(doc), self.MAX_PAGES)
@@ -141,14 +144,10 @@ class PdfOcr(BaseExtractor):
                 page = doc[index]
                 try:
                     bitmap = page.render(scale=self.RENDER_SCALE)
-                    result, _ = engine(np.asarray(bitmap.to_pil().convert("RGB")))
+                    lines = _ocr.read(np.asarray(bitmap.to_pil().convert("RGB")))
                 finally:
                     page.close()
-                if not result:
-                    continue
-                text = "\n".join(
-                    t.strip() for _b, t, s in result if float(s) >= 0.5 and t.strip()
-                )
+                text = "\n".join(t for t, _score in lines)
                 if text:
                     found += len(text)
                     out.text("pdf_ocr", text, ord=index + 1)

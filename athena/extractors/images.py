@@ -8,6 +8,7 @@ from typing import Any, ClassVar
 
 from ..core.facets import Facets
 from ..core.safety import reader_for
+from . import _ocr
 from .base import BaseExtractor, ExtractContext, Tier, register
 
 # Pillow's decompression-bomb guard is a security control, not a nuisance: an
@@ -276,21 +277,17 @@ class ImageOcr(BaseExtractor):
     version: ClassVar[int] = 1
     tier: ClassVar[int] = Tier.ML
     media_types: ClassVar[frozenset[str]] = frozenset({"image"})
-    requires: ClassVar[tuple[str, ...]] = ("rapidocr_onnxruntime",)
+    # Empty: the package name is not fixed (see _ocr.py -- RapidOCR was
+    # renamed, and which one is installable depends on the interpreter), so
+    # availability is reported by `missing_dependency` instead.
+    requires: ClassVar[tuple[str, ...]] = ()
     max_bytes: ClassVar[int] = 64 * 1024 * 1024
 
     MIN_CONFIDENCE: ClassVar[float] = 0.5
     MAX_EDGE: ClassVar[int] = 1600
 
-    _engine = None  # process-global; loading the models costs ~1.5s
-
-    @classmethod
-    def engine(cls):
-        if cls._engine is None:
-            from rapidocr_onnxruntime import RapidOCR
-
-            cls._engine = RapidOCR()
-        return cls._engine
+    def missing_dependency(self) -> str | None:
+        return super().missing_dependency() or _ocr.available()
 
     def run(self, ctx: ExtractContext, out: Facets) -> None:
         import numpy as np
@@ -299,15 +296,7 @@ class ImageOcr(BaseExtractor):
         if max(img.size) > self.MAX_EDGE:
             img.thumbnail((self.MAX_EDGE, self.MAX_EDGE))
 
-        result, _elapsed = self.engine()(np.asarray(img))
-        if not result:
-            return
-
-        lines = [
-            (text.strip(), float(score))
-            for _box, text, score in result
-            if float(score) >= self.MIN_CONFIDENCE and text.strip()
-        ]
+        lines = _ocr.read(np.asarray(img), self.MIN_CONFIDENCE)
         if not lines:
             return
 
