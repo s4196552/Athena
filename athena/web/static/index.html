@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Athena</title>
+<link rel="stylesheet" href="app.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>&#129418;</text></svg>">
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">
+    <span class="mark"></span>
+    <span class="name">Athena</span>
+  </div>
+
+  <div class="searchwrap">
+    <svg class="searchicon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+    <input id="search" type="search" autocomplete="off" spellcheck="false"
+           placeholder="Search filenames, document text, OCR, tags&hellip;">
+    <kbd>/</kbd>
+  </div>
+
+  <div class="topright">
+    <div id="integrity" class="badge badge-ok" title="Source files verified unchanged after every read">
+      <span class="dot"></span><span id="integrity-text">0 files modified</span>
+    </div>
+    <button id="pause" class="ghost" hidden>Pause</button>
+  </div>
+</header>
+
+<div id="progress" class="progress" hidden>
+  <div class="progress-bar"><div id="progress-fill"></div></div>
+  <span id="progress-text"></span>
+</div>
+
+<main class="shell">
+
+  <aside class="rail">
+    <section class="addroot">
+      <label for="rootpath">Index a folder</label>
+      <div class="row">
+        <input id="rootpath" type="text" spellcheck="false" placeholder="C:\Users\you\Documents">
+        <button id="scan" class="primary">Scan</button>
+      </div>
+      <p class="hint" id="scanhint">
+        The browser can&rsquo;t hand over a real folder path, so the server takes one here.
+      </p>
+    </section>
+
+    <section class="facet" id="libsection" hidden>
+      <h2>Libraries</h2>
+      <div id="f-libraries"></div>
+    </section>
+
+    <!-- The agent's axes are rendered here, one group per tag kind. -->
+    <div id="f-groups"></div>
+
+    <section class="facet">
+      <h2>Media</h2>
+      <div id="f-types" class="chips"></div>
+    </section>
+
+    <section class="facet">
+      <h2>Size</h2>
+      <div id="f-sizes" class="chips"></div>
+    </section>
+
+    <section class="facet">
+      <h2>Colour</h2>
+      <div id="f-colors" class="swatches"></div>
+    </section>
+
+    <section class="facet stats">
+      <h2>Library</h2>
+      <dl id="f-stats"></dl>
+    </section>
+  </aside>
+
+  <section class="results">
+    <div class="resultbar">
+      <div class="counts">
+        <span id="count">&nbsp;</span>
+        <span id="label" class="label"></span>
+      </div>
+
+      <div class="viewswitch" role="group" aria-label="View">
+        <button class="ghost" data-view="grid" aria-pressed="true">Grid</button>
+        <button class="ghost" data-view="graph" aria-pressed="false">Graph</button>
+      </div>
+
+      <button id="clear" class="ghost" hidden>Clear filters</button>
+    </div>
+
+    <!-- What you can do with a selection once you have one: name it, or ask
+         what it adds up to. Both act on the current filter, not on a
+         hand-picked set, which is what makes them work at 4,000 files. -->
+    <div id="selection-actions" class="selection-actions" hidden>
+      <button id="summarise" class="primary">Summarise this selection</button>
+      <div class="tagbox">
+        <input id="tag-name" type="text" maxlength="80"
+               placeholder="Tag everything matching&hellip;">
+        <button id="tag-apply" class="ghost">Tag all</button>
+      </div>
+      <span id="tag-note" class="hint"></span>
+    </div>
+
+    <div id="grid-view">
+      <div id="grid" class="grid"></div>
+      <div id="sentinel"></div>
+      <div id="empty" class="empty" hidden>
+        <p>Nothing matches.</p>
+      </div>
+    </div>
+
+    <div id="graph-view" hidden>
+      <div class="graphhead">
+        <p id="graph-caption" class="caption"></p>
+        <div id="graph-legend" class="legend"></div>
+      </div>
+      <div class="canvaswrap"><canvas id="graph"></canvas></div>
+      <p id="graph-hint" class="hint graphhint"></p>
+    </div>
+  </section>
+
+</main>
+
+<aside id="brief" class="brief" hidden>
+  <div class="briefhead">
+    <h3 id="brief-title"></h3>
+    <div class="row">
+      <button id="brief-ai" class="ghost" hidden>Ask a model to write it</button>
+      <button id="brief-close" class="ghost close" aria-label="Close">&times;</button>
+    </div>
+  </div>
+  <div id="brief-body" class="briefbody"></div>
+</aside>
+
+<aside id="panel" class="panel" hidden>
+  <button id="panel-close" class="ghost close" aria-label="Close">&times;</button>
+  <div id="panel-body"></div>
+</aside>
+<div id="scrim" class="scrim" hidden></div>
+
+<script src="app.js"></script>
+</body>
+</html>

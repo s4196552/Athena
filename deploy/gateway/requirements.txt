@@ -1,0 +1,2 @@
+# The gateway is a relay, not an application. One dependency.
+anthropic>=0.40

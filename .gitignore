@@ -1,0 +1,38 @@
+# Generated test library: 2.5 GB, 6,120 files, and rebuilt in one command by
+# make_mock_library.py. There is nothing in it worth versioning -- it is
+# synthetic fixture data, not input, and committing it would make a clone of
+# this repo larger than most of the libraries Athena is meant to index.
+mock_library/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+build/
+dist/
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Athena's own catalogue lives in %LOCALAPPDATA%\Athena (or ~/.local/share on
+# Linux), never in the project -- so there is nothing to ignore here for it.
+# These are only for the case where ATHENA_HOME has been pointed at the repo
+# during development.
+*.sqlite3
+*.sqlite3-wal
+*.sqlite3-shm
+
+# Editors and OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Deployment. Never commit a gateway token or a vendor key.
+.env
+.env.*
+!.env.example
+.vercel/
