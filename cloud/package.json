@@ -12,7 +12,8 @@
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
     "seed": "tsx scripts/generate-seed.mts && tsx scripts/build-graph.mts",
-    "check:taxonomy": "tsx scripts/check-taxonomy-parity.mts"
+    "check:taxonomy": "tsx scripts/check-taxonomy-parity.mts",
+    "verify": "node tests/verify.mjs"
   },
   "dependencies": {
     "d3-force": "^3.0.0",
