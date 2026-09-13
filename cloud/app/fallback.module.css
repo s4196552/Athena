@@ -1,0 +1,113 @@
+/* The two screens nobody designs until someone lands on one.
+ *
+ * Shared by app/not-found.tsx, app/error.tsx and app/w/[ws]/not-found.tsx.
+ * Deliberately self-contained: a 404 can be reached with no session, from a
+ * route whose layout failed to build, so this cannot depend on the app chrome
+ * having rendered.
+ */
+
+.shell {
+  min-height: 100dvh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 20px 64px;
+}
+
+/* Inside the workspace chrome the top bar is already on screen, so the panel
+   sits under it rather than centring on the whole viewport. */
+.inset {
+  min-height: calc(100dvh - var(--topbar));
+  align-items: flex-start;
+  padding-top: 64px;
+}
+
+.panel {
+  width: 100%;
+  max-width: 520px;
+  text-align: left;
+}
+
+.code {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  color: var(--muted);
+  margin: 0 0 10px;
+}
+
+.title {
+  font-size: 28px;
+  line-height: 1.2;
+  letter-spacing: -0.018em;
+  margin: 0 0 10px;
+}
+
+.body {
+  color: var(--muted);
+  margin: 0 0 8px;
+  max-width: 68ch;
+}
+
+.slug {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--text);
+  background: var(--bg-sunk);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 1px 6px;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 22px;
+}
+
+.btn,
+.ghost {
+  display: inline-flex;
+  align-items: center;
+  min-height: 38px;
+  padding: 9px 16px;
+  border-radius: 8px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.btn {
+  background: var(--accent);
+  color: #06101f;
+  border: 1px solid var(--accent);
+}
+.btn:hover { filter: brightness(1.08); }
+
+.ghost {
+  background: transparent;
+  color: var(--text);
+  border: 1px solid var(--line);
+}
+.ghost:hover { border-color: var(--accent-dim); background: var(--bg-raised); }
+
+.btn:active,
+.ghost:active { transform: translateY(1px); }
+
+/* The error message itself, shown only when one is safe to show. */
+.detail {
+  margin-top: 22px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-left: 2px solid var(--warn);
+  border-radius: 6px;
+  background: var(--bg-raised);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}

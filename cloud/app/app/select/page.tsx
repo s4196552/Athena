@@ -3,6 +3,7 @@ import { requireSession } from '@/lib/auth';
 import { getRepository } from '@/lib/data';
 import { describeScope } from '@/lib/data/json/scope';
 import { formatCount } from '@/lib/format';
+import { PlainBar } from '@/components/shell/PlainBar';
 import s from './select.module.css';
 
 export const dynamic = 'force-dynamic';
@@ -54,28 +55,34 @@ export default async function SelectWorkspace() {
   }
 
   return (
-    <main className={s.shell}>
-      <div className={s.wrap}>
-        <h1 className={s.title}>Choose a workspace</h1>
-        <p className={s.sub}>
-          Signed in as {session.user.name}. A workspace is a team&rsquo;s view of a
-          library — two teams can share one catalogue and still see different
-          slices of it.
-        </p>
-
-        {[...byOrg.values()].map((org) => (
-          <section key={org.name} className={s.org}>
-            <h2 className={s.orgName}>{org.name}</h2>
-            <div className={s.grid}>{org.rows}</div>
-          </section>
-        ))}
-
-        {workspaces.length === 0 && (
-          <p className={s.empty}>
-            This account is not a member of any workspace yet.
+    <>
+      <PlainBar user={session.user} />
+      <main className={s.shell} id="main">
+        <div className={s.wrap}>
+          <h1 className={s.title}>Choose a workspace</h1>
+          <p className={s.sub}>
+            Signed in as {session.user.name}. A workspace is a team&rsquo;s view of a
+            library — two teams can share one catalogue and still see different
+            slices of it.
           </p>
-        )}
-      </div>
-    </main>
+
+          {[...byOrg.values()].map((org) => (
+            <section key={org.name} className={s.org}>
+              <h2 className={s.orgName}>{org.name}</h2>
+              <div className={s.grid}>{org.rows}</div>
+            </section>
+          ))}
+
+          {workspaces.length === 0 && (
+            <p className={s.empty}>
+              This account is not a member of any workspace yet. Ask an owner to
+              invite you, or sign in as one of the demo accounts to look around.
+              {' '}
+              <Link href="/login">Switch account</Link>
+            </p>
+          )}
+        </div>
+      </main>
+    </>
   );
 }

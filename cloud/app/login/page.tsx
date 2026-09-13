@@ -36,7 +36,7 @@ export default async function LoginPage({
   );
 
   return (
-    <main className={s.shell}>
+    <main className={s.shell} id="main">
       <div className={s.card}>
         <Link href="/" className={s.brand}>
           <span className={s.mark} aria-hidden="true" />

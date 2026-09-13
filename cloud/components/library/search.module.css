@@ -1,0 +1,62 @@
+.form {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 0 1 260px;
+  min-width: 180px;
+}
+
+.field {
+  position: relative;
+  flex: 1 1 auto;
+  display: flex;
+  align-items: center;
+}
+
+.icon {
+  position: absolute;
+  left: 9px;
+  color: var(--faint);
+  pointer-events: none;
+}
+
+.input {
+  width: 100%;
+  min-height: 32px;
+  padding: 6px 10px 6px 28px;
+  font: inherit;
+  font-size: 13px;
+  color: var(--text);
+  background: var(--bg-sunk);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+.input::placeholder { color: var(--faint); }
+
+/* No `outline: none` here. The app has five inputs that suppress the global
+   focus ring and replace it with a 1px border change, which is not a focus
+   indicator anyone can see; this keeps the ring and tints the border as well. */
+.input:focus-visible { border-color: var(--accent); }
+
+/* The clear affordance a type="search" gives for free in WebKit renders as a
+   light glyph; this makes it legible on a dark field. */
+.input::-webkit-search-cancel-button { filter: invert(0.7); cursor: pointer; }
+
+.go {
+  font: inherit;
+  font-size: 12.5px;
+  min-height: 32px;
+  padding: 6px 12px;
+  color: var(--muted);
+  background: transparent;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.go:hover { color: var(--text); border-color: var(--accent-dim); }
+.go:active { background: var(--bg-sunk); }
+
+@media (max-width: 640px) {
+  .form { flex: 1 1 100%; }
+}

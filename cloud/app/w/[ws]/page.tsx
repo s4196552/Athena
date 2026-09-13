@@ -44,6 +44,11 @@ export default async function WorkspaceOverview({
             return every.find((x) => x.id === o.workspaceId)?.name ?? 'another team';
           }),
       );
+      // The sharing page is addressed by slug, and by the slug of the org that
+      // OWNS the library -- which is not always this workspace's org, because a
+      // library can be granted across orgs.
+      const ownerOrg = lib ? await repo.getOrg(lib.ownerOrgId) : null;
+
       return {
         id: g.libraryId,
         name: lib?.name ?? g.libraryId,
@@ -53,6 +58,7 @@ export default async function WorkspaceOverview({
         visible: await repo.countForGrant(g),
         total: lib?.fileCount ?? 0,
         others,
+        href: lib && ownerOrg ? `/org/${ownerOrg.slug}/libraries/${lib.slug}` : null,
       };
     }),
   );
@@ -61,7 +67,7 @@ export default async function WorkspaceOverview({
   const base = `/w/${ws}`;
 
   return (
-    <div className={s.wrap}>
+    <main className={s.wrap} id="main">
       <h1 className={s.title}>{ctx.workspace.name}</h1>
       <p className={s.subtitle}>
         {ctx.org.name} · you are {ctx.role === 'admin' ? 'an' : 'a'} {ctx.role}
@@ -123,6 +129,11 @@ export default async function WorkspaceOverview({
                   catalogue, not a copy.
                 </p>
               )}
+              {l.href && (
+                <p className={s.libLink}>
+                  <Link href={l.href}>Who else can see this library →</Link>
+                </p>
+              )}
             </div>
           ))}
         </div>
@@ -165,6 +176,6 @@ export default async function WorkspaceOverview({
           <Link href={`${base}/library`} className={s.btn}>Browse files</Link>
         </div>
       </section>
-    </div>
+    </main>
   );
 }

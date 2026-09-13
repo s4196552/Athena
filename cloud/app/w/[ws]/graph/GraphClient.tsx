@@ -380,7 +380,7 @@ export function GraphClient({ ws, fileRules, tagRules }: Props) {
         : `${payload.ids.length.toLocaleString()} files, ${(payload.edges.length / 2).toLocaleString()} links`;
 
   return (
-    <div className={s.page}>
+    <div className={s.page} id="main">
       <div className={s.head}>
         <div className={s.modes} role="group" aria-label="Graph mode">
           {(['files', 'tags', 'pyramid'] as const).map((option) => (

@@ -71,11 +71,23 @@
 /* ---------- nav ---------- */
 .nav { display: flex; gap: 2px; margin-left: 6px; overflow-x: auto; }
 .link {
+  display: inline-flex; align-items: center; min-height: 30px;
   padding: 6px 11px; border-radius: 7px;
   font-size: 13px; color: var(--muted); text-decoration: none;
   white-space: nowrap;
 }
 .link:hover { color: var(--text); background: #1f2836; }
+.link:active { background: var(--bg-sunk); }
+
+/* Styled from the attribute the markup already sets, so the look and the
+   accessible state cannot disagree. The underline is the second signal that
+   "convey information with more than color alone" asks for. */
+.link[aria-current='page'] {
+  color: var(--text);
+  background: #1f2836;
+  font-weight: 600;
+  box-shadow: inset 0 -2px 0 var(--ws-accent, var(--accent));
+}
 
 .right { margin-left: auto; display: flex; align-items: center; gap: 12px; flex: 0 0 auto; }
 .who { display: flex; align-items: center; gap: 7px; font-size: 13px; color: var(--muted); }

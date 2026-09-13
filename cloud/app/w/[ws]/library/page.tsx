@@ -4,12 +4,14 @@ import { requireSession } from '@/lib/auth';
 import { workspaceContext } from '@/lib/data/context';
 import { getRepository } from '@/lib/data';
 import { parseFilterParams, toSearchParams, hasAnyFilter } from '@/lib/filter/params';
+import { PAGE_SIZE } from '@/lib/data/repository';
 import { formatCount, formatNumber } from '@/lib/format';
 import { library } from '@/lib/data/json/load';
 import { TagIcon, Icon } from '@/lib/icons';
 import { LibraryBrowser, type FileView, type TagView } from '@/components/library/LibraryBrowser';
 import { AlbumRail, type AlbumView } from '@/components/library/AlbumRail';
 import { BriefPanel } from '@/components/library/BriefPanel';
+import { SearchBox } from '@/components/library/SearchBox';
 import s from './library.module.css';
 
 export const dynamic = 'force-dynamic';
@@ -54,6 +56,15 @@ export default async function LibraryPage({
     for (const t of library(id).tags) tagById.set(t.id, t);
   }
 
+  function href(next: URLSearchParams): string {
+    /* Any change to WHAT is selected returns to the first page. Keeping the
+       offset would land someone on "showing 241-360 of 118" -- an empty screen
+       that looks like the filter found nothing. */
+    next.delete('cursor');
+    const qs = next.toString();
+    return `/w/${ws}/library${qs ? `?${qs}` : ''}`;
+  }
+
   /** Toggling a value keeps the rest of the filter intact, which is what makes
    *  the rail feel like refinement rather than navigation. */
   function toggleHref(kind: string, name: string): string {
@@ -64,8 +75,7 @@ export default async function LibraryPage({
       : [...current, name];
     if (updated.length) next.set(kind, updated.join(','));
     else next.delete(kind);
-    const qs = next.toString();
-    return `/w/${ws}/library${qs ? `?${qs}` : ''}`;
+    return href(next);
   }
 
   /** Selecting an album narrows the current selection rather than replacing
@@ -75,9 +85,34 @@ export default async function LibraryPage({
     const next = new URLSearchParams(usp);
     if (id) next.set('album', id);
     else next.delete('album');
-    const qs = next.toString();
-    return `/w/${ws}/library${qs ? `?${qs}` : ''}`;
+    return href(next);
   }
+
+  /** Dropping the search term alone. Until there was a way to set `q` there was
+   *  no way to clear it either, short of "Clear", which discarded every facet
+   *  with it. */
+  function withoutQuery(): string {
+    const next = new URLSearchParams(usp);
+    next.delete('q');
+    return href(next);
+  }
+
+  /** Paging keeps the selection and moves only the offset. */
+  function pageHref(offset: number): string {
+    const next = new URLSearchParams(usp);
+    next.delete('cursor');
+    const qs = next.toString();
+    const cursor = offset > 0 ? `cursor=${offset}` : '';
+    const joined = [qs, cursor].filter(Boolean).join('&');
+    return `/w/${ws}/library${joined ? `?${joined}` : ''}`;
+  }
+
+  /* The filter minus the two things a new search must not inherit: the previous
+     term, and the page it was being read at. */
+  const preserve = [...toSearchParams(query).entries()].filter(([k]) => k !== 'q');
+
+  const start = Number(query.cursor ?? 0);
+  const shown = page.files.length;
 
   const active = Object.entries(query.tags ?? {}).flatMap(([kind, names]) =>
     names.map((name) => ({ kind, name })));
@@ -169,7 +204,7 @@ export default async function LibraryPage({
         ))}
       </aside>
 
-      <main className={s.main}>
+      <main className={s.main} id="main">
         <div className={s.head}>
           <p className={s.count}>
             {formatCount(page.total, 'item')}
@@ -177,6 +212,7 @@ export default async function LibraryPage({
             {query.q ? ` matching “${query.q}”` : ''}
           </p>
           <div className={s.spacer} />
+          <SearchBox ws={ws} preserve={preserve} q={query.q} />
           {/* Summarises THIS selection, so the filter in the URL is the input.
               Serialised canonically so the same selection is one cache key. */}
           <BriefPanel ws={ws} query={toSearchParams(query).toString()} />
@@ -190,8 +226,14 @@ export default async function LibraryPage({
           )}
         </div>
 
-        {(active.length > 0 || openAlbum) && (
+        {(active.length > 0 || openAlbum || query.q) && (
           <div className={s.active}>
+            {query.q && (
+              <Link href={withoutQuery()} className={s.activeChip}>
+                <Icon name="search" size={12} />
+                {query.q} <span aria-hidden="true">×</span>
+              </Link>
+            )}
             {openAlbum && (
               <Link href={albumHref(null)} className={s.activeChip} scroll={false}>
                 <Icon name="photo_album" size={12} />
@@ -225,11 +267,36 @@ export default async function LibraryPage({
           />
         )}
 
-        {page.nextCursor && (
-          <p className={s.more}>
-            Showing the first {formatNumber(page.files.length)} of{' '}
-            {formatNumber(page.total)}.
-          </p>
+        {/* This used to be the sentence "Showing the first 120 of 2,971." with
+            no control beside it, which made files 121 onwards unreachable by
+            clicking. The repository has always returned a usable nextCursor. */}
+        {(start > 0 || page.nextCursor) && shown > 0 && (
+          <nav className={s.pager} aria-label="Pages">
+            <p className={s.pagerCount}>
+              {formatNumber(start + 1)}–{formatNumber(start + shown)} of{' '}
+              {formatNumber(page.total)}
+            </p>
+            <div className={s.pagerButtons}>
+              {start > 0 ? (
+                <Link href={pageHref(Math.max(0, start - PAGE_SIZE))} className={s.pagerBtn}>
+                  <Icon name="chevron_left" size={14} /> Previous
+                </Link>
+              ) : (
+                <span className={`${s.pagerBtn} ${s.pagerOff}`} aria-hidden="true">
+                  <Icon name="chevron_left" size={14} /> Previous
+                </span>
+              )}
+              {page.nextCursor ? (
+                <Link href={pageHref(start + PAGE_SIZE)} className={s.pagerBtn}>
+                  Next <Icon name="chevron_right" size={14} />
+                </Link>
+              ) : (
+                <span className={`${s.pagerBtn} ${s.pagerOff}`} aria-hidden="true">
+                  Next <Icon name="chevron_right" size={14} />
+                </span>
+              )}
+            </div>
+          </nav>
         )}
       </main>
     </div>

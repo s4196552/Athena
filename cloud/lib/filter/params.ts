@@ -19,18 +19,33 @@ export function parseFilterParams(sp: URLSearchParams): FileQuery {
     if (values.length) tags[kind] = values;
   }
 
+  /* The cursor is an offset into the filtered list. It is parsed rather than
+     passed through so a hand-edited "?cursor=-5" or "?cursor=abc" cannot reach
+     Array.slice, where a negative start counts from the END and would quietly
+     serve the wrong page. */
+  const offset = Number(sp.get('cursor'));
+  const cursor = Number.isFinite(offset) && offset > 0
+    ? String(Math.floor(offset))
+    : undefined;
+
   return {
     tags: Object.keys(tags).length ? tags : undefined,
     q: sp.get('q')?.trim() || undefined,
     albumId: sp.get('album')?.trim() || undefined,
     mediaType: sp.get('type')?.trim() || undefined,
     libraryId: (sp.get('lib')?.trim() || undefined) as LibraryId | undefined,
+    cursor,
   };
 }
 
 /** The inverse. Canonical ordering (axes in TAG_AXES order, values sorted) so
  *  the same selection always produces the same string -- which is what lets a
- *  saved view be compared, cached and shared. */
+ *  saved view be compared, cached and shared.
+ *
+ *  `cursor` is deliberately NOT emitted. This string is the brief's cache key
+ *  and the graph's filter, and both describe the whole selection: page three of
+ *  a selection is the same selection, so including the offset would fragment
+ *  the cache and hand the graph a parameter it has no use for. */
 export function toSearchParams(query: FileQuery): URLSearchParams {
   const sp = new URLSearchParams();
   for (const kind of KINDS) {

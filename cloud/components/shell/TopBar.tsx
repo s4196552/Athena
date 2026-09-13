@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { signOutAction } from '@/app/(auth)/actions';
 import { WorkspaceSwitcher } from './WorkspaceSwitcher';
+import { NavLinks } from './NavLinks';
 import s from './topbar.module.css';
 
 interface Props {
@@ -16,18 +17,15 @@ export function TopBar({ user, workspace, orgName, role, workspaces }: Props) {
 
   return (
     <header className={s.bar}>
-      <Link href="/app" className={s.brand}>
+      {/* Icon-only, so the name is carried by the label rather than by the
+          glyph -- a screen reader otherwise announces this as just "link". */}
+      <Link href="/app" className={s.brand} aria-label="Athena — all workspaces">
         <span className={s.mark} aria-hidden="true" />
       </Link>
 
       <WorkspaceSwitcher current={workspace} orgName={orgName} role={role} workspaces={workspaces} />
 
-      <nav className={s.nav}>
-        <Link href={base} className={s.link}>Overview</Link>
-        <Link href={`${base}/library`} className={s.link}>Library</Link>
-        <Link href={`${base}/graph`} className={s.link}>Graph</Link>
-        <Link href={`${base}/settings/colors`} className={s.link}>Colours</Link>
-      </nav>
+      <NavLinks base={base} />
 
       <div className={s.right}>
         <span className={s.who} title={user.email}>

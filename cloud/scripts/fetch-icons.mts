@@ -44,6 +44,9 @@ const MANIFEST: string[] = [
   'close', 'undo', 'add', 'delete', 'expand_more', 'check', 'folder',
   'grid_view', 'view_list', 'auto_awesome', 'photo_album', 'hub',
   'visibility_off', 'inventory_2', 'edit', 'more_horiz', 'search',
+  'chevron_left', 'chevron_right', 'bookmark_add',
+  // appearance
+  'light_mode', 'dark_mode', 'brightness_auto',
 ];
 
 async function pathFor(name: string): Promise<string> {

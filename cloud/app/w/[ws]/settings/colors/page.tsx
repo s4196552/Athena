@@ -71,7 +71,7 @@ export default async function ColorsPage({
     g.values.slice(0, 8).map((v) => `${g.kind}:${v.name}`));
 
   return (
-    <div className={s.page}>
+    <main className={s.page} id="main">
       <div className={s.pageHead}>
         <div>
           <h1 className={s.h1}>Graph colours — {ctx.workspace.name}</h1>
@@ -80,9 +80,14 @@ export default async function ColorsPage({
             other teams share the same catalogue and colour it their own way.
           </p>
         </div>
-        <div className={s.modeSwitch}>
-          <Link href={`/w/${ws}/settings/colors?mode=files`} className={mode === 'files' ? s.modeOn : s.modeOff}>Files</Link>
-          <Link href={`/w/${ws}/settings/colors?mode=tags`} className={mode === 'tags' ? s.modeOn : s.modeOff}>Tags</Link>
+        <div className={s.headActions}>
+          <div className={s.modeSwitch}>
+            <Link href={`/w/${ws}/settings/colors?mode=files`} className={mode === 'files' ? s.modeOn : s.modeOff}>Files</Link>
+            <Link href={`/w/${ws}/settings/colors?mode=tags`} className={mode === 'tags' ? s.modeOn : s.modeOff}>Tags</Link>
+          </div>
+          {/* The graph links here; until now nothing linked back, so the only
+              way to see an edit take effect was the browser's Back button. */}
+          <Link href={`/w/${ws}/graph`} className={s.back}>Back to the graph →</Link>
         </div>
       </div>
 
@@ -94,6 +99,6 @@ export default async function ColorsPage({
         preview={preview}
         suggestions={suggestions}
       />
-    </div>
+    </main>
   );
 }

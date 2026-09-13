@@ -1,6 +1,7 @@
 import 'server-only';
 import { tenancy, library, libraryGraph } from './load';
 import { applyScope } from './scope';
+import { PAGE_SIZE } from '../repository';
 import type {
   AthenaRepository, WorkspaceContext, FileQuery, FilePage, FacetGroup,
 } from '../repository';
@@ -20,7 +21,6 @@ import { TAG_AXES } from '../../taxonomy';
  * of this file is to be replaceable.
  */
 
-const PAGE_SIZE = 120;
 
 function ranks(role: WorkspaceRole): number {
   return { viewer: 1, editor: 2, admin: 3 }[role];

@@ -311,6 +311,49 @@ section('filtering');
 }
 
 // ===========================================================================
+section('paging and search');
+// ===========================================================================
+{
+  /* Before this existed, PAGE_SIZE was 120, the repository returned a correct
+     nextCursor, and the UI printed "Showing the first 120 of 6,120" as plain
+     text with nothing to click -- so files 121 onwards could not be reached by
+     anyone using the app as intended. */
+  const strip = (h) => h.replace(/<!--[\s\S]*?-->/g, '');
+  const range = (h) => (strip(h).match(/pagerCount"[^>]*>([^<]*)</) ?? [, ''])[1];
+  const lib = '/w/hadesmedia-ops/library';
+
+  const first = await get(lib, iris);
+  const second = await get(`${lib}?cursor=120`, iris);
+  const last = await get(`${lib}?cursor=6000`, iris);
+
+  check('the first page is numbered from one', range(first.body) === '1–120 of 6,120', range(first.body));
+  check('a cursor advances the page', range(second.body) === '121–240 of 6,120', range(second.body));
+  check('the last file is reachable', range(last.body) === '6,001–6,120 of 6,120', range(last.body));
+  check('the last page offers no next', !/pagerBtn" href="[^"]*cursor=6120/.test(last.body));
+
+  // A negative offset would count from the END of the array in Array.slice,
+  // serving a page nobody asked for rather than failing.
+  check('a negative cursor is ignored', range((await get(`${lib}?cursor=-5`, iris)).body) === '1–120 of 6,120');
+  check('a non-numeric cursor is ignored', range((await get(`${lib}?cursor=abc`, iris)).body) === '1–120 of 6,120');
+
+  const items = (h) => (strip(h).match(/>([\d,]+ items?[^<]*)</) ?? [, ''])[1];
+  const found = await get(`${lib}?q=vortex`, iris);
+  check('the library has a search control', /name="q"/.test(first.body));
+  check('searching narrows the selection', items(found.body).includes('matching')
+    && items(found.body) !== items(first.body), items(found.body));
+
+  const both = await get(`${lib}?topic=design&q=vortex`, iris);
+  check('searching keeps the facets already chosen', /topic=design/.test(both.body)
+    && items(both.body) !== items(found.body), items(both.body));
+
+  // Changing WHAT is selected has to return to page one, or the reader lands
+  // on "241-360 of 118", which reads as "your filter found nothing".
+  check('changing a facet returns to the first page',
+    !/href="[^"]*cursor=\d+[^"]*"[^>]*class="[^"]*chip/.test(second.body)
+    && !/chip[^"]*"[^>]*href="[^"]*cursor=/.test(second.body));
+}
+
+// ===========================================================================
 section('colour groups');
 // ===========================================================================
 {

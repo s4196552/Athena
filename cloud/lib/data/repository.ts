@@ -38,6 +38,13 @@ export interface WorkspaceContext {
   can(action: 'read' | 'tag' | 'manageGrants'): boolean;
 }
 
+/** Files per page when a query does not say otherwise.
+ *
+ *  Part of the contract rather than a driver's private constant, because the UI
+ *  has to size a page control with it: "Previous" needs to know how far back a
+ *  page is, and only the page that renders the control can ask. */
+export const PAGE_SIZE = 120;
+
 export interface FileQuery {
   /** Restrict to one granted library; omitted means all granted libraries. */
   libraryId?: LibraryId;

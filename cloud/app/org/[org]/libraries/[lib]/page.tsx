@@ -64,9 +64,12 @@ export default async function LibrarySharingPage({
   rows.sort((a, b) => b.visible - a.visible);
 
   return (
-    <main className={s.page}>
+    <main className={s.page} id="main">
+      {/* The label has to name where the link GOES. This previously read as the
+          org name and pointed at /app, and neither /org/[org] nor
+          /org/[org]/libraries exists to make that hierarchy true. */}
       <p className={s.crumb}>
-        <Link href="/app">{org.name}</Link> / Libraries
+        <Link href="/app">All workspaces</Link> / {org.name} / Libraries
       </p>
       <h1 className={s.h1}>{lib.name}</h1>
       <p className={s.sub}>
