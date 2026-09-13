@@ -619,6 +619,93 @@ section('briefs');
     page.body.includes('Summarise'));
 }
 
+// ===========================================================================
+section('reading a brief aloud');
+// ===========================================================================
+{
+  const health = await json('/api/health');
+
+  check('health reports whether a speech key is configured',
+    typeof health.data.speech?.configured === 'boolean',
+    `speech.configured = ${health.data.speech?.configured}, `
+    + `model ${health.data.speech?.model}`);
+
+  /* Same rule as the model key: presence may be reported, the value may not.
+     Both ElevenLabs shapes are matched -- the current `sk_` keys and the bare
+     32-character hex of older ones -- because matching only the current format
+     is how a leak check passes while the key it was written to catch walks
+     straight past it. */
+  const KEY_SHAPE = /sk_[0-9a-f]{24}|ELEVENLABS_API_KEY=\S|xi-api-key/;
+  check('the speech key itself is never reported',
+    !KEY_SHAPE.test(JSON.stringify(health.data)));
+
+  /* lib/ai/elevenlabs.ts imports `server-only`, so a client import fails the
+     build. This is the belt to that braces -- the same pair the Gemini key
+     gets, because a second key is a second chance to ship one. */
+  const lib = await get('/w/hadesmedia-ops/library?topic=finance', iris);
+  check('the speech key never reaches the browser bundle', !KEY_SHAPE.test(lib.body));
+
+  /* blob: audio is blocked with NO VISIBLE ERROR when media-src falls back to
+     default-src, so the header is asserted rather than trusted. */
+  const csp = (await fetch(`${BASE}/api/health`)).headers.get('content-security-policy') ?? '';
+  check('the CSP allows blob audio', /media-src[^;]*blob:/.test(csp),
+    csp.split(';').map((d) => d.trim()).find((d) => d.startsWith('media-src')) ?? 'no media-src');
+
+  const speak = (ws, cookie, body) => fetch(`${BASE}/api/w/${ws}/speak`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...(cookie ? { cookie } : {}) },
+    body: JSON.stringify(body),
+    redirect: 'manual',
+  });
+
+  const anon = await speak('hadesmedia-ops', null, { query: '' });
+  check('speech refuses a signed-out caller', anon.status === 401, `status ${anon.status}`);
+
+  /* Priya, not Iris: Iris is a viewer in Marketing, so she is a MEMBER there
+     and would legitimately get past this. Priya is in Marketing, Finance and
+     Publishing and in no sense in Ops, which is the pair the tenancy section
+     above uses for the same reason.
+
+     404 rather than 403, and it must land BEFORE the missing-key 503 -- a
+     non-member learning which optional services a workspace has configured is
+     a small existence leak, and the cheapest time to get the order right is
+     while writing it. */
+  const wrongWs = await speak('hadesmedia-ops', priya, { query: '' });
+  check('speech refuses a workspace the caller is not in',
+    wrongWs.status === 404, `status ${wrongWs.status}`);
+
+  /* THE ONE THAT MATTERS. The route takes a filter and rebuilds the brief from
+     the catalogue; it must never speak text a caller supplied, or the endpoint
+     is a free speech service billed to one key. Extra fields are sent and the
+     answer must not depend on them. */
+  const configured = health.data.speech?.configured === true;
+  const injected = await speak('hadesmedia-ops', iris, {
+    query: '',
+    text: 'read this instead',
+    input: 'or this',
+  });
+
+  if (configured) {
+    const type = injected.headers.get('content-type') ?? '';
+    check('speech answers with audio, never with the posted text',
+      type.startsWith('audio/') || injected.status === 429,
+      `status ${injected.status}, ${type}`);
+  } else {
+    const body = await injected.json().catch(() => ({}));
+    check('speech says plainly that no key is configured',
+      injected.status === 503 && /speech key/i.test(body.error ?? ''),
+      `status ${injected.status}`);
+    check('no key means no Listen control is drawn',
+      !lib.body.includes('>Listen<'),
+      'a control that cannot work should not be shown');
+  }
+
+  const empty = await speak('hadesmedia-ops', iris, { query: 'q=zzzznothingmatchesthis' });
+  check('speech refuses an empty selection rather than reading nothing',
+    empty.status === 422 || empty.status === 503, `status ${empty.status}`);
+}
+
+
 console.log(
   `\n${failures === 0 ? `all ${checks} checks passed` : `${failures} of ${checks} FAILED`}\n`,
 );

@@ -2,7 +2,9 @@
 
 import { useState, useTransition } from 'react';
 import { Icon } from '@/lib/icons';
-import { summarise, type BriefResult } from '@/app/w/[ws]/summarise';
+import { summarise } from '@/app/w/[ws]/summarise';
+import { ListenButton } from './ListenButton';
+import type { BriefResult } from '@/lib/brief/types';
 import s from './brief.module.css';
 
 /* "Summarise this selection."
@@ -12,7 +14,18 @@ import s from './brief.module.css';
  * model call nobody is paying attention to, and running one per page view on a
  * shared key is how a demo becomes an invoice.
  */
-export function BriefPanel({ ws, query }: { ws: string; query: string }) {
+export function BriefPanel({
+  ws,
+  query,
+  speechReady = false,
+}: {
+  ws: string;
+  query: string;
+  /** Whether this server has a speech key. Passed down rather than fetched so
+   *  the Listen button is simply absent when it could not work, instead of
+   *  appearing and then failing on the first press. */
+  speechReady?: boolean;
+}) {
   const [open, setOpen] = useState(false);
   const [brief, setBrief] = useState<BriefResult | null>(null);
   const [pending, start] = useTransition();
@@ -48,6 +61,16 @@ export function BriefPanel({ ws, query }: { ws: string; query: string }) {
             <p className={s.waiting}>Counting the selection…</p>
           ) : (
             <>
+              {/* Below the title and above everything else, so the option to
+                  listen is visible before the reading would have to scroll. It
+                  is only ever rendered next to the text it reads. */}
+              {brief.files > 0 && (
+                // Keyed on the selection: a different filter is a different
+                // recording, and remounting discards the old blob and every
+                // piece of state that described it in one step.
+                <ListenButton key={query} ws={ws} query={query} ready={speechReady} />
+              )}
+
               {brief.intro && <p className={s.intro}>{brief.intro}</p>}
 
               {(brief.themes?.length || brief.about?.length) && (

@@ -11,6 +11,7 @@ import { TagIcon, Icon } from '@/lib/icons';
 import { LibraryBrowser, type FileView, type TagView } from '@/components/library/LibraryBrowser';
 import { AlbumRail, type AlbumView } from '@/components/library/AlbumRail';
 import { BriefPanel } from '@/components/library/BriefPanel';
+import { elevenLabsStatus } from '@/lib/ai/elevenlabs';
 import { SearchBox } from '@/components/library/SearchBox';
 import s from './library.module.css';
 
@@ -215,7 +216,11 @@ export default async function LibraryPage({
           <SearchBox ws={ws} preserve={preserve} q={query.q} />
           {/* Summarises THIS selection, so the filter in the URL is the input.
               Serialised canonically so the same selection is one cache key. */}
-          <BriefPanel ws={ws} query={toSearchParams(query).toString()} />
+          <BriefPanel
+            ws={ws}
+            query={toSearchParams(query).toString()}
+            speechReady={elevenLabsStatus().configured}
+          />
           <Link href={`/w/${ws}/graph?${toSearchParams(query)}`} className={s.linkBtn}>
             <Icon name="hub" size={14} /> View as graph
           </Link>

@@ -27,6 +27,12 @@ const csp = [
   "frame-ancestors 'none'",
   "object-src 'none'",
   "img-src 'self' data: blob:",  // blob: for exporting the graph as a PNG
+  /* The brief is read aloud from an mp3 this server proxies, handed to
+     <audio> as an object URL -- so blob:, for the same reason img-src needs
+     it. Without this line media falls back to default-src and the audio is
+     blocked with no visible error, which is the CSP failure mode that costs
+     an afternoon. */
+  "media-src 'self' blob:",
   "font-src 'self'",
   "connect-src 'self'",          // the gateway ping is proxied server-side now
   "worker-src 'self' blob:",     // the force simulation runs in a Web Worker

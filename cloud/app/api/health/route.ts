@@ -3,6 +3,7 @@ import { getRepository } from '@/lib/data';
 import { describeScope } from '@/lib/data/json/scope';
 import { DEMO_AUTH } from '@/lib/auth/mode';
 import { geminiStatus, probeGemini } from '@/lib/ai/gemini';
+import { elevenLabsStatus, probeElevenLabs } from '@/lib/ai/elevenlabs';
 import type { UserId } from '@/lib/data/types';
 
 /* The deploy smoke test.
@@ -19,6 +20,7 @@ export async function GET(request: Request) {
   const params = new URL(request.url).searchParams;
   const deep = params.get('deep') === '1';
   const probeAi = params.get('ai') === '1';
+  const probeSpeech = params.get('speech') === '1';
 
   /* `authSecret` reports PRESENCE ONLY, never the value. Without it, a
      deployment missing AUTH_SECRET builds cleanly, serves every public page
@@ -42,6 +44,11 @@ export async function GET(request: Request) {
        counted-only briefs and looks identical to one where the model is
        working, which is a confusing thing to debug from the outside. */
     ai: geminiStatus(),
+    /* Presence only, never the value -- the same rule again. Without this a
+       deployment missing ELEVENLABS_API_KEY simply has no Listen button,
+       which is indistinguishable from a deployment where the feature was
+       never built. */
+    speech: elevenLabsStatus(),
   };
 
   /* `?ai=1` asks Google whether the configured key is actually accepted FROM
@@ -52,6 +59,16 @@ export async function GET(request: Request) {
      It lists models rather than generating, so it costs nothing. */
   if (probeAi) {
     const probe = await probeGemini();
+    return NextResponse.json({ ...base, probe }, { status: probe.ok ? 200 : 503 });
+  }
+
+  /* `?speech=1` is the ElevenLabs half of `?ai=1`, and exists for the same
+     reason: `configured: true` only means the variable is set. It lists
+     voices rather than synthesising, so it costs no characters. The reply
+     includes the account's character quota when the key is allowed to read
+     it -- the number that actually predicts when speech stops working. */
+  if (probeSpeech) {
+    const probe = await probeElevenLabs();
     return NextResponse.json({ ...base, probe }, { status: probe.ok ? 200 : 503 });
   }
 

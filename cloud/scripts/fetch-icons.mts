@@ -47,6 +47,8 @@ const MANIFEST: string[] = [
   'chevron_left', 'chevron_right', 'bookmark_add',
   // appearance
   'light_mode', 'dark_mode', 'brightness_auto',
+  // playback
+  'play_arrow', 'stop', 'volume_up',
 ];
 
 async function pathFor(name: string): Promise<string> {

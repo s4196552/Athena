@@ -15,6 +15,7 @@
     "check:taxonomy": "tsx scripts/check-taxonomy-parity.mts",
     "check:pyramid": "tsx tests/pyramid.mts",
     "check:contrast": "tsx scripts/check-contrast.mts",
+    "check:speech": "tsx scripts/check-speakable.mts",
     "icons": "tsx scripts/fetch-icons.mts",
     "verify": "node tests/verify.mjs"
   },
