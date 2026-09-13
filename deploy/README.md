@@ -113,6 +113,23 @@ tags from broadest to most specific by which ones contain which. It
 replaces the hand-written `site/index.html`, which was ported into
 `cloud/app/page.tsx` and removed (git still has it).
 
+On top of the read sit the things a viewer can do without the catalogue ever
+being written to: correct a wrong tag, collect files into an album, summarise a
+selection, and hear that summary read aloud. Corrections and albums are a
+read-time lens applied at one chokepoint, held in a per-workspace cookie.
+
+`/w/[ws]/agent` is the engine's classifier brought to the browser, with the
+same split the engine keeps — arithmetic answers what it can, and a model is
+asked only where arithmetic runs out:
+
+| Verb | Model? | What it does |
+|---|---|---|
+| Ask for a view | yes | Turns a question into a filter and picks one of the three drawings. It never reports a quantity; the repository counts. |
+| Label | yes | Proposes a doctype and topic for a file that has neither. Proposing and accepting are separate, so a spend is never tied to a write. |
+| Explain | yes | Describes a file from its name, folder, labels and neighbours — and lists what it could not determine without opening it. |
+| Related | **no** | Cosine similarity over idf-weighted tag vectors. Runs on its own when a file opens, because it costs nothing. |
+| Same name, several places | **no** | Names filed across multiple folders. Not a duplicate finder: every content hash in this catalogue is distinct, so there are none to find. |
+
 ### Project settings — do this before the first push
 
 1. **Root Directory → `cloud`.**
@@ -162,6 +179,12 @@ Python detection the old static setup existed to avoid.
 | `GEMINI_MODEL` | no (`gemini-3.5-flash-lite`) | Model ids move faster than deploys. |
 | `ATHENA_AI_VIEWER_DAILY` | no (`25`) | Model-written summaries per viewer per day. |
 | `ATHENA_AI_DAILY_MAX` | no (`400`) | Per lambda instance per day. See the caveat below. |
+| `ELEVENLABS_API_KEY` | no | Adds **Listen** to a summary — the brief read aloud. Without it the summary still appears in full and the button is simply absent, because a control that cannot work should not be drawn. Needs a key with synthesis rights; a read-scoped key is not enough. |
+| `ELEVENLABS_MODEL` | no (`eleven_flash_v2_5`) | Flash bills at half the character rate of the v2 models and returns in well under a second. |
+| `ELEVENLABS_VOICE_ID` | no (`21m00Tcm4TlvDq8ikWAM`) | Rachel, a stock voice present on every account including the free tier. A cloned or premium voice id works and then 404s for anyone deploying with their own key. |
+| `ELEVENLABS_FORMAT` | no (`mp3_44100_128`) | The highest bitrate not gated behind a paid tier. `mp3_44100_192` needs Creator; PCM and WAV at 44.1 kHz need Pro. |
+| `ATHENA_TTS_VIEWER_DAILY` | no (`8000`) | **Characters**, not calls, per viewer per day. |
+| `ATHENA_TTS_DAILY_MAX` | no (`150000`) | Characters per lambda instance per day. |
 
 #### One key, a public demo
 
@@ -187,15 +210,49 @@ limit in Google AI Studio as well** if this deployment is public.
 a deployment that is quietly serving counted-only briefs is distinguishable from
 one where the model is working.
 
+#### The second key, and why it is counted differently
+
+`ELEVENLABS_API_KEY` follows every rule above — `server-only` in
+`lib/ai/elevenlabs.ts`, the key in an `xi-api-key` header rather than a query
+string, presence-only reporting at `GET /api/health` under `speech`. Two things
+differ, and both are deliberate.
+
+**The caller does not supply the text.** `POST /api/w/[ws]/speak` takes the same
+filter string the library page is already using and rebuilds the brief from the
+catalogue. An endpoint that speaks whatever it is posted is a free
+text-to-speech service for anyone who can reach the login screen, billed to one
+shared key — and a per-call length cap does not fix that, because the abuse is
+unlimited *calls* of legal length. Rebuilding costs nothing: the brief is
+produced in `cached-only` mode, which never spends a model call.
+
+**The budget counts characters, not calls** (`lib/speech/budget.ts`), because
+that is the unit ElevenLabs bills. Counting calls would price a forty-character
+title the same as a two-thousand-character brief. It is a separate counter from
+the brief's, so listening to a summary does not spend the allowance for writing
+one. **Set a usage limit on the key in the ElevenLabs dashboard** if this
+deployment is public; the same caveat as above applies, for the same reasons.
+
+`GET /api/health?speech=1` asks ElevenLabs whether the key is accepted *from
+this server*, which is not the same question as whether the variable is set. It
+lists voices rather than synthesising, so it costs no characters, and it reports
+the account's remaining character quota when the key is allowed to read it.
+
 ```bash
 cd cloud
 npm install
 npm run seed            # regenerate the committed catalogue (deterministic)
 npm run check:taxonomy  # fails if the TS taxonomy has drifted from the Python
 npm run check:pyramid   # the pyramid layout, checked without a browser
+npm run check:contrast  # every text pair against the WCAG ratio, both themes
+npm run check:speech    # the brief-to-speech translation, no key needed
+npm run check:related   # the two arithmetic agent verbs, against the real seed
 npm run build
 vercel deploy --prod
 ```
+
+The last three need neither a server nor a key, which is the point of having
+them: a ranking and a contrast ratio both fail *silently* — they return a list
+or a colour either way, and nothing about a wrong one looks wrong.
 
 `GET /api/health` answers "did the Next.js build actually deploy?";
 `GET /api/health?deep=1` additionally reads the catalogue, which is how you
@@ -219,9 +276,13 @@ to adopt before the app works.
 
 Vercel's filesystem is read-only at runtime and lambdas are ephemeral, so:
 mock sign-ups live for one server process, and colour groups are stored per
-viewer in `localStorage`. Tag corrections and albums are held in a per-workspace
-cookie, and brief text is cached in module memory for thirty minutes. All of
-them say so in the UI. The repository interface already has the seams
+viewer in `localStorage`. Tag corrections, albums and accepted agent
+suggestions are held in a per-workspace cookie, and brief text is cached in
+module memory for thirty minutes — as is synthesised audio, capped at 12 MB
+rather than by entry count, because what is scarce there is bytes of lambda
+memory and not rows. Both AI budgets are cookies too, which is why they are
+described in the UI as speed bumps rather than limits. All of them say so in
+the UI. The repository interface already has the seams
 (`getColorGroups`, and `readOverlay` in `lib/overlay/store.ts`) for when there
 is a real store.
 
