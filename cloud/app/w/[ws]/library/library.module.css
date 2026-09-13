@@ -1,0 +1,89 @@
+.layout { display: flex; align-items: flex-start; min-height: calc(100vh - var(--topbar)); }
+
+.rail {
+  width: 236px; flex: 0 0 auto;
+  border-right: 1px solid var(--line-soft);
+  padding: 16px 14px 60px;
+  position: sticky; top: var(--topbar);
+  max-height: calc(100vh - var(--topbar));
+  overflow-y: auto;
+}
+@media (max-width: 860px) {
+  .layout { flex-direction: column; }
+  .rail { width: 100%; position: static; max-height: none; border-right: 0; border-bottom: 1px solid var(--line-soft); }
+}
+
+.group { margin-bottom: 18px; }
+.groupLabel {
+  font-size: 10.5px; text-transform: uppercase; letter-spacing: .08em;
+  color: var(--faint); font-weight: 600; margin: 0 0 7px;
+}
+.chips { display: flex; flex-wrap: wrap; gap: 5px; }
+.chip {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 4px 8px; border-radius: 999px;
+  font-size: 12px; text-decoration: none; color: var(--muted);
+  background: var(--bg-raised); border: 1px solid var(--line);
+}
+.chip:hover { color: var(--text); border-color: var(--accent-dim); }
+.chipOn {
+  color: #06101f; font-weight: 500;
+  background: var(--ws-accent, var(--accent));
+  border-color: var(--ws-accent, var(--accent));
+}
+.chipCount { font-size: 11px; opacity: .7; font-variant-numeric: tabular-nums; }
+
+.main { flex: 1; min-width: 0; padding: 16px 20px 64px; }
+
+.head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; }
+.count { margin: 0; font-size: 13.5px; color: var(--muted); }
+.spacer { flex: 1; }
+.linkBtn {
+  font-size: 12.5px; text-decoration: none; color: var(--text);
+  background: var(--bg-raised); border: 1px solid var(--line);
+  border-radius: 7px; padding: 5px 10px;
+}
+.linkBtn:hover { border-color: var(--accent-dim); }
+
+.active { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px; }
+.activeChip {
+  font-size: 12px; padding: 4px 9px; border-radius: 999px;
+  text-decoration: none; color: #06101f;
+  background: var(--ws-accent, var(--accent));
+}
+
+.grid {
+  display: grid; gap: 12px;
+  grid-template-columns: repeat(auto-fill, minmax(158px, 1fr));
+}
+.card { min-width: 0; }
+.thumb {
+  aspect-ratio: 4 / 3; border-radius: 8px;
+  border: 1px solid var(--line);
+  display: grid; place-items: center;
+  margin-bottom: 7px;
+}
+.ext {
+  font-size: 11px; text-transform: uppercase; letter-spacing: .07em;
+  color: #ffffffcc; font-weight: 600;
+  background: #0009; border-radius: 4px; padding: 2px 7px;
+}
+.name {
+  margin: 0 0 2px; font-size: 12.5px; font-weight: 500;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.meta {
+  margin: 0; font-size: 11.5px; color: var(--faint);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.userTags { margin: 5px 0 0; display: flex; flex-wrap: wrap; gap: 4px; }
+/* Ringed rather than filled, so a person's tag is visibly distinct from a
+   machine's -- the same distinction asset_tag.source makes in the schema. */
+.userTag {
+  font-size: 10.5px; padding: 1px 6px; border-radius: 999px;
+  color: var(--ws-accent, var(--accent));
+  border: 1px solid currentColor;
+}
+
+.empty { color: var(--muted); font-size: 14px; }
+.more { margin-top: 20px; font-size: 12.5px; color: var(--faint); }

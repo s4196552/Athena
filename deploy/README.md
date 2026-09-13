@@ -11,7 +11,7 @@ So exactly two pieces are hosted, and neither of them is the library:
 | | What | Where | Why it cannot be local |
 |---|---|---|---|
 | **Railway** | `gateway/` — an authenticated, rate-limited relay to a model vendor | a long-lived container | It holds a **shared secret**. Ship a key inside a desktop app and you have published it. |
-| **Vercel** | `../site/` — the landing page | static CDN | It is the public front door. Nothing to compute. |
+| **Vercel** | `../cloud/` — the landing page and Athena Cloud | serverless + CDN | It is the public front door, and a *shared* catalogue is by definition not one machine's. |
 
 If what you actually want is *your* Athena reachable from elsewhere, do not
 move the app — expose the machine that has the files, with a Cloudflare Tunnel
@@ -104,25 +104,83 @@ demo; this is the better fit if the point is that no vendor sees the content.
 
 ---
 
-## Vercel — the landing page
+## Vercel — Athena Cloud
 
-`site/index.html` is hand-written, dependency-free, and the only thing being
-deployed. `vercel.json` at the repo root pins `framework`, `buildCommand` and
-`installCommand` to empty on purpose — `pyproject.toml` sits at the root, and
-zero-config Vercel would otherwise detect a Python project and try to install
-Athena itself.
+`cloud/` is a Next.js app: the landing page, mock accounts, and a shared,
+multi-tenant read of a catalogue with an Obsidian-style graph over it. It
+replaces the hand-written `site/index.html`, which was ported into
+`cloud/app/page.tsx` and removed (git still has it).
+
+### Project settings — do this before the first push
+
+1. **Root Directory → `cloud`.**
+2. **Turn OFF "Include source files outside of the Root Directory in the Build
+   Step."**
+
+The second toggle is what actually solves the problem the old static config was
+written around. `pyproject.toml` sits at the repo root, and zero-config Vercel
+would detect a Python project and try to install Athena itself. Previously that
+was suppressed by pinning `framework: null`; now `pyproject.toml` is simply not
+in the build context at all, so the detection is structurally impossible rather
+than merely overridden.
+
+The consequence to accept, deliberately rather than by surprise: **the build
+cannot read `athena/`.** So the seed catalogue is generated locally and
+committed, and `npm run check:taxonomy` — which compares `cloud/lib/taxonomy.ts`
+against `athena/agent/taxonomy.py` and fails on drift — is a local and CI step,
+never a build step.
+
+Note also that Vercel reads `vercel.json` **from the Root Directory**. The
+repo-root one is therefore no longer read at all and has been deleted rather
+than left behind as config that lies about what deploys. `cloud/vercel.json`
+pins `framework: "nextjs"` and nothing else.
+
+### Environment
+
+| Variable | Required | What it does |
+|---|---|---|
+| `AUTH_SECRET` | **yes, in production** | Signs the session cookie (HMAC-SHA256). Unset in production the app throws at first use — loudly, rather than silently rejecting every session and presenting as an unexplained redirect loop back to `/login`. |
+| `ATHENA_DATA_DRIVER` | no (`json`) | Which repository driver backs the catalogue. |
+| `ATHENA_GATEWAY_URL` | no | Shows the Railway gateway's health on the landing page. Fetched **server-side**, which is why the CSP can be `connect-src 'self'` instead of the old `connect-src *`. |
 
 ```bash
+cd cloud
+npm install
+npm run seed            # regenerate the committed catalogue (deterministic)
+npm run check:taxonomy  # fails if the TS taxonomy has drifted from the Python
+npm run build
 vercel deploy --prod
 ```
 
-To show live gateway status on the page, set `GATEWAY` in the script block at
-the bottom of `site/index.html` to your Railway URL. Left empty, the row says
-so rather than failing — the page never depends on the gateway being up.
+`GET /api/health` answers "did the Next.js build actually deploy?";
+`GET /api/health?deep=1` additionally reads the catalogue, which is how you
+confirm `outputFileTracingIncludes` packaged `data/seed` into the lambda. That
+failure mode is the nasty one — it works locally and 500s on Vercel.
+
+### Security headers
+
+They live in `cloud/next.config.ts`, **not** in `vercel.json`. `vercel.json`
+headers are applied by Vercel's edge and so do not exist under `next dev`,
+which would let development and production disagree about CSP — the one setting
+whose failure mode is a silently blank page.
+
+`script-src` still carries `'unsafe-inline'`, because the App Router streams
+hydration data as inline `<script>` tags. Removing it means a per-request nonce
+set in middleware, which forces every nonce-bearing route to render dynamically
+and gives up static generation. That is a deliberate later trade, not something
+to adopt before the app works.
+
+### What does not persist
+
+Vercel's filesystem is read-only at runtime and lambdas are ephemeral, so:
+mock sign-ups live for one server process, and colour groups are stored per
+viewer in `localStorage`. Both say so in the UI. The repository interface
+already has the seam (`getColorGroups`) for when there is a real store.
 
 ### What not to do with it
 
-It is tempting to serve `athena/web/static/` from Vercel and point it at
+Athena Cloud reads a *committed* catalogue. It is tempting instead to serve
+`athena/web/static/` from Vercel and point it at a running `athena serve` on
 `http://127.0.0.1:8731`. It does not work, and the second reason is the
 important one:
 

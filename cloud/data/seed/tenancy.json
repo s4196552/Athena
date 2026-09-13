@@ -1,0 +1,1045 @@
+{
+  "users": [
+    {
+      "id": "u_ada",
+      "email": "ada@hadesmedia.example",
+      "name": "Ada Reyes",
+      "avatarHue": 265,
+      "createdAt": 1768435200000
+    },
+    {
+      "id": "u_tomas",
+      "email": "tomas@hadesmedia.example",
+      "name": "Tomas Ek",
+      "avatarHue": 38,
+      "createdAt": 1768435200000
+    },
+    {
+      "id": "u_priya",
+      "email": "priya@hadesmedia.example",
+      "name": "Priya Raman",
+      "avatarHue": 170,
+      "createdAt": 1768435200000
+    },
+    {
+      "id": "u_iris",
+      "email": "iris@hadesmedia.example",
+      "name": "Iris Okafor",
+      "avatarHue": 210,
+      "createdAt": 1768435200000
+    },
+    {
+      "id": "u_sam",
+      "email": "sam@hermes.example",
+      "name": "Sam Delacroix",
+      "avatarHue": 95,
+      "createdAt": 1768435200000
+    },
+    {
+      "id": "u_nils",
+      "email": "nils@hermes.example",
+      "name": "Nils Bergstrom",
+      "avatarHue": 320,
+      "createdAt": 1768435200000
+    }
+  ],
+  "orgs": [
+    {
+      "id": "o_hades",
+      "slug": "hadesmedia",
+      "name": "HadesMedia",
+      "plan": "demo"
+    },
+    {
+      "id": "o_hermes",
+      "slug": "hermes",
+      "name": "Hermes Media",
+      "plan": "demo"
+    }
+  ],
+  "workspaces": [
+    {
+      "id": "w_mkt",
+      "orgId": "o_hades",
+      "slug": "hadesmedia-marketing",
+      "name": "Marketing",
+      "accentHex": "#ff8fc2",
+      "defaultLibraryId": "l_main"
+    },
+    {
+      "id": "w_fin",
+      "orgId": "o_hades",
+      "slug": "hadesmedia-finance",
+      "name": "Finance",
+      "accentHex": "#ffc861",
+      "defaultLibraryId": "l_main"
+    },
+    {
+      "id": "w_ops",
+      "orgId": "o_hades",
+      "slug": "hadesmedia-ops",
+      "name": "Studio Ops",
+      "accentHex": "#56d3c8",
+      "defaultLibraryId": "l_main"
+    },
+    {
+      "id": "w_pub",
+      "orgId": "o_hermes",
+      "slug": "hermes-publishing",
+      "name": "Publishing",
+      "accentHex": "#c3a8ff",
+      "defaultLibraryId": "l_hermes"
+    }
+  ],
+  "orgMemberships": [
+    {
+      "userId": "u_ada",
+      "orgId": "o_hades",
+      "role": "admin"
+    },
+    {
+      "userId": "u_tomas",
+      "orgId": "o_hades",
+      "role": "member"
+    },
+    {
+      "userId": "u_priya",
+      "orgId": "o_hades",
+      "role": "member"
+    },
+    {
+      "userId": "u_iris",
+      "orgId": "o_hades",
+      "role": "owner"
+    },
+    {
+      "userId": "u_priya",
+      "orgId": "o_hermes",
+      "role": "guest"
+    },
+    {
+      "userId": "u_sam",
+      "orgId": "o_hermes",
+      "role": "owner"
+    },
+    {
+      "userId": "u_nils",
+      "orgId": "o_hermes",
+      "role": "member"
+    }
+  ],
+  "workspaceMemberships": [
+    {
+      "userId": "u_ada",
+      "workspaceId": "w_mkt",
+      "role": "admin"
+    },
+    {
+      "userId": "u_iris",
+      "workspaceId": "w_mkt",
+      "role": "viewer"
+    },
+    {
+      "userId": "u_tomas",
+      "workspaceId": "w_fin",
+      "role": "admin"
+    },
+    {
+      "userId": "u_iris",
+      "workspaceId": "w_ops",
+      "role": "admin"
+    },
+    {
+      "userId": "u_priya",
+      "workspaceId": "w_mkt",
+      "role": "editor"
+    },
+    {
+      "userId": "u_priya",
+      "workspaceId": "w_fin",
+      "role": "viewer"
+    },
+    {
+      "userId": "u_priya",
+      "workspaceId": "w_pub",
+      "role": "viewer"
+    },
+    {
+      "userId": "u_sam",
+      "workspaceId": "w_pub",
+      "role": "admin"
+    },
+    {
+      "userId": "u_nils",
+      "workspaceId": "w_pub",
+      "role": "editor"
+    }
+  ],
+  "libraries": [
+    {
+      "id": "l_main",
+      "ownerOrgId": "o_hades",
+      "slug": "hadesmedia-main",
+      "name": "HadesMedia Master Catalogue",
+      "rootLabel": "HadesMedia/",
+      "fileCount": 6120,
+      "tagCount": 202,
+      "assetCount": 6120,
+      "bytes": 265861803753,
+      "indexedAt": 1768435200000,
+      "mutations": 0
+    },
+    {
+      "id": "l_vault",
+      "ownerOrgId": "o_hades",
+      "slug": "hadesmedia-brand-vault",
+      "name": "Brand Vault",
+      "rootLabel": "BrandVault/",
+      "fileCount": 380,
+      "tagCount": 163,
+      "assetCount": 380,
+      "bytes": 8568465854,
+      "indexedAt": 1768435200000,
+      "mutations": 0
+    },
+    {
+      "id": "l_hermes",
+      "ownerOrgId": "o_hermes",
+      "slug": "hermes-archive",
+      "name": "Hermes Archive",
+      "rootLabel": "HermesMedia/",
+      "fileCount": 1240,
+      "tagCount": 191,
+      "assetCount": 1240,
+      "bytes": 56378048328,
+      "indexedAt": 1768435200000,
+      "mutations": 0
+    }
+  ],
+  "grants": [
+    {
+      "id": "g_mkt_main",
+      "libraryId": "l_main",
+      "workspaceId": "w_mkt",
+      "access": "contribute",
+      "scope": {
+        "pathPrefixes": [
+          "Marketing_Assets/",
+          "Brand_Identity/",
+          "Video/",
+          "Photography_and_Reference/",
+          "Art_Assets/"
+        ]
+      },
+      "grantedBy": "u_iris",
+      "grantedAt": 1768435200000,
+      "isPrimary": true
+    },
+    {
+      "id": "g_fin_main",
+      "libraryId": "l_main",
+      "workspaceId": "w_fin",
+      "access": "contribute",
+      "scope": {
+        "pathPrefixes": [
+          "Documents/",
+          "_Archive/",
+          "_Shared/"
+        ],
+        "includeTags": [
+          {
+            "kind": "topic",
+            "name": "finance"
+          },
+          {
+            "kind": "topic",
+            "name": "legal"
+          },
+          {
+            "kind": "topic",
+            "name": "operations"
+          },
+          {
+            "kind": "topic",
+            "name": "hr"
+          }
+        ]
+      },
+      "grantedBy": "u_iris",
+      "grantedAt": 1768435200000,
+      "isPrimary": true
+    },
+    {
+      "id": "g_ops_main",
+      "libraryId": "l_main",
+      "workspaceId": "w_ops",
+      "access": "manage",
+      "scope": {},
+      "grantedBy": "u_iris",
+      "grantedAt": 1768435200000,
+      "isPrimary": true
+    },
+    {
+      "id": "g_mkt_vault",
+      "libraryId": "l_vault",
+      "workspaceId": "w_mkt",
+      "access": "contribute",
+      "scope": {},
+      "grantedBy": "u_iris",
+      "grantedAt": 1768435200000,
+      "isPrimary": false
+    },
+    {
+      "id": "g_pub_hermes",
+      "libraryId": "l_hermes",
+      "workspaceId": "w_pub",
+      "access": "manage",
+      "scope": {},
+      "grantedBy": "u_sam",
+      "grantedAt": 1768435200000,
+      "isPrimary": true
+    },
+    {
+      "id": "g_pub_vault",
+      "libraryId": "l_vault",
+      "workspaceId": "w_pub",
+      "access": "read",
+      "scope": {},
+      "grantedBy": "u_iris",
+      "grantedAt": 1768435200000,
+      "isPrimary": false
+    }
+  ],
+  "savedViews": [
+    {
+      "id": "v_1",
+      "workspaceId": "w_fin",
+      "name": "Unpaid invoices 2025",
+      "query": "doctype=invoice&date=2025",
+      "createdBy": "u_tomas",
+      "createdAt": 1768435200000
+    },
+    {
+      "id": "v_2",
+      "workspaceId": "w_fin",
+      "name": "Contracts up for renewal",
+      "query": "doctype=contract&topic=legal",
+      "createdBy": "u_tomas",
+      "createdAt": 1768435200000
+    },
+    {
+      "id": "v_3",
+      "workspaceId": "w_mkt",
+      "name": "Key art, press-ready",
+      "query": "custom=press-ready&type=image",
+      "createdBy": "u_ada",
+      "createdAt": 1768435200000
+    },
+    {
+      "id": "v_4",
+      "workspaceId": "w_mkt",
+      "name": "Vortex Rising campaign",
+      "query": "entity=Vortex_Rising&topic=marketing",
+      "createdBy": "u_ada",
+      "createdAt": 1768435200000
+    },
+    {
+      "id": "v_5",
+      "workspaceId": "w_ops",
+      "name": "Everything 2025",
+      "query": "date=2025",
+      "createdBy": "u_iris",
+      "createdAt": 1768435200000
+    }
+  ],
+  "colorGroups": [
+    {
+      "workspaceId": "w_mkt",
+      "mode": "files",
+      "rules": [
+        {
+          "id": "r_marketing",
+          "label": "Marketing",
+          "color": "#ff8fc2",
+          "query": {
+            "type": "tag",
+            "kind": "topic",
+            "name": "marketing"
+          },
+          "enabled": true
+        },
+        {
+          "id": "r_design",
+          "label": "Design",
+          "color": "#cfa0ff",
+          "query": {
+            "type": "tag",
+            "kind": "topic",
+            "name": "design"
+          },
+          "enabled": true
+        },
+        {
+          "id": "r_sales",
+          "label": "Sales",
+          "color": "#ff9f5a",
+          "query": {
+            "type": "tag",
+            "kind": "topic",
+            "name": "sales"
+          },
+          "enabled": true
+        },
+        {
+          "id": "r_operations",
+          "label": "Operations",
+          "color": "#8fb6c9",
+          "query": {
+            "type": "tag",
+            "kind": "topic",
+            "name": "operations"
+          },
+          "enabled": true
+        },
+        {
+          "id": "r_engineering",
+          "label": "Engineering",
+          "color": "#5aa9ff",
+          "query": {
+            "type": "tag",
+            "kind": "topic",
+            "name": "engineering"
+          },
+          "enabled": true
+        },
+        {
+          "id": "r_legal",
+          "label": "Legal",
+          "color": "#b48cff",
+          "query": {
+            "type": "tag",
+            "kind": "topic",
+            "name": "legal"
+          },
+          "enabled": true
+        },
+        {
+          "id": "r_research",
+          "label": "Research",
+          "color": "#56d3c8",
+          "query": {
+            "type": "tag",
+            "kind": "topic",
+            "name": "research"
+          },
+          "enabled": true
+        },
+        {
+          "id": "r_finance",
+          "label": "Finance",
+          "color": "#ffc861",
+          "query": {
+            "type": "tag",
+            "kind": "topic",
+            "name": "finance"
+          },
+          "enabled": true
+        }
+      ],
+      "updatedAt": 1768435200000
+    },
+    {
+      "workspaceId": "w_fin",
+      "mode": "files",
+      "rules": [
+        {
+          "id": "r_finance",
+          "label": "Finance",
+          "color": "#ffc861",
+          "query": {
+            "type": "tag",
+            "kind": "topic",
+            "name": "finance"
+          },
+          "enabled": true
+        },
+        {
+          "id": "r_legal",
+          "label": "Legal",
+          "color": "#b48cff",
+          "query": {
+            "type": "tag",
+            "kind": "topic",
+            "name": "legal"
+          },
+          "enabled": true
+        },
+        {
+          "id": "r_operations",
+          "label": "Operations",
+          "color": "#8fb6c9",
+          "query": {
+            "type": "tag",
+            "kind": "topic",
+            "name": "operations"
+          },
+          "enabled": true
+        },
+        {
+          "id": "r_hr",
+          "label": "People & HR",
+          "color": "#7ee0a3",
+          "query": {
+            "type": "tag",
+            "kind": "topic",
+            "name": "hr"
+          },
+          "enabled": true
+        },
+        {
+          "id": "r_sales",
+          "label": "Sales",
+          "color": "#ff9f5a",
+          "query": {
+            "type": "tag",
+            "kind": "topic",
+            "name": "sales"
+          },
+          "enabled": true
+        },
+        {
+          "id": "r_marketing",
+          "label": "Marketing",
+          "color": "#ff8fc2",
+          "query": {
+            "type": "tag",
+            "kind": "topic",
+            "name": "marketing"
+          },
+          "enabled": true
+        },
+        {
+          "id": "r_engineering",
+          "label": "Engineering",
+          "color": "#5aa9ff",
+          "query": {
+            "type": "tag",
+            "kind": "topic",
+            "name": "engineering"
+          },
+          "enabled": true
+        },
+        {
+          "id": "r_research",
+          "label": "Research",
+          "color": "#56d3c8",
+          "query": {
+            "type": "tag",
+            "kind": "topic",
+            "name": "research"
+          },
+          "enabled": true
+        }
+      ],
+      "updatedAt": 1768435200000
+    },
+    {
+      "workspaceId": "w_ops",
+      "mode": "files",
+      "rules": [
+        {
+          "id": "r_engineering",
+          "label": "Engineering",
+          "color": "#5aa9ff",
+          "query": {
+            "type": "tag",
+            "kind": "topic",
+            "name": "engineering"
+          },
+          "enabled": true
+        },
+        {
+          "id": "r_design",
+          "label": "Design",
+          "color": "#cfa0ff",
+          "query": {
+            "type": "tag",
+            "kind": "topic",
+            "name": "design"
+          },
+          "enabled": true
+        },
+        {
+          "id": "r_operations",
+          "label": "Operations",
+          "color": "#8fb6c9",
+          "query": {
+            "type": "tag",
+            "kind": "topic",
+            "name": "operations"
+          },
+          "enabled": true
+        },
+        {
+          "id": "r_marketing",
+          "label": "Marketing",
+          "color": "#ff8fc2",
+          "query": {
+            "type": "tag",
+            "kind": "topic",
+            "name": "marketing"
+          },
+          "enabled": true
+        },
+        {
+          "id": "r_finance",
+          "label": "Finance",
+          "color": "#ffc861",
+          "query": {
+            "type": "tag",
+            "kind": "topic",
+            "name": "finance"
+          },
+          "enabled": true
+        },
+        {
+          "id": "r_legal",
+          "label": "Legal",
+          "color": "#b48cff",
+          "query": {
+            "type": "tag",
+            "kind": "topic",
+            "name": "legal"
+          },
+          "enabled": true
+        },
+        {
+          "id": "r_hr",
+          "label": "People & HR",
+          "color": "#7ee0a3",
+          "query": {
+            "type": "tag",
+            "kind": "topic",
+            "name": "hr"
+          },
+          "enabled": true
+        },
+        {
+          "id": "r_security",
+          "label": "Security",
+          "color": "#e35d8a",
+          "query": {
+            "type": "tag",
+            "kind": "topic",
+            "name": "security"
+          },
+          "enabled": true
+        }
+      ],
+      "updatedAt": 1768435200000
+    },
+    {
+      "workspaceId": "w_pub",
+      "mode": "files",
+      "rules": [
+        {
+          "id": "r_marketing",
+          "label": "Marketing",
+          "color": "#ff8fc2",
+          "query": {
+            "type": "tag",
+            "kind": "topic",
+            "name": "marketing"
+          },
+          "enabled": true
+        },
+        {
+          "id": "r_design",
+          "label": "Design",
+          "color": "#cfa0ff",
+          "query": {
+            "type": "tag",
+            "kind": "topic",
+            "name": "design"
+          },
+          "enabled": true
+        },
+        {
+          "id": "r_operations",
+          "label": "Operations",
+          "color": "#8fb6c9",
+          "query": {
+            "type": "tag",
+            "kind": "topic",
+            "name": "operations"
+          },
+          "enabled": true
+        },
+        {
+          "id": "r_legal",
+          "label": "Legal",
+          "color": "#b48cff",
+          "query": {
+            "type": "tag",
+            "kind": "topic",
+            "name": "legal"
+          },
+          "enabled": true
+        },
+        {
+          "id": "r_finance",
+          "label": "Finance",
+          "color": "#ffc861",
+          "query": {
+            "type": "tag",
+            "kind": "topic",
+            "name": "finance"
+          },
+          "enabled": true
+        },
+        {
+          "id": "r_research",
+          "label": "Research",
+          "color": "#56d3c8",
+          "query": {
+            "type": "tag",
+            "kind": "topic",
+            "name": "research"
+          },
+          "enabled": true
+        },
+        {
+          "id": "r_engineering",
+          "label": "Engineering",
+          "color": "#5aa9ff",
+          "query": {
+            "type": "tag",
+            "kind": "topic",
+            "name": "engineering"
+          },
+          "enabled": true
+        },
+        {
+          "id": "r_sales",
+          "label": "Sales",
+          "color": "#ff9f5a",
+          "query": {
+            "type": "tag",
+            "kind": "topic",
+            "name": "sales"
+          },
+          "enabled": true
+        }
+      ],
+      "updatedAt": 1768435200000
+    },
+    {
+      "workspaceId": "w_mkt",
+      "mode": "tags",
+      "rules": [
+        {
+          "id": "r_topic",
+          "label": "Topic",
+          "color": "#6fb2ff",
+          "query": {
+            "type": "kind",
+            "kind": "topic"
+          },
+          "enabled": true
+        },
+        {
+          "id": "r_doctype",
+          "label": "Kind",
+          "color": "#ffc861",
+          "query": {
+            "type": "kind",
+            "kind": "doctype"
+          },
+          "enabled": true
+        },
+        {
+          "id": "r_author",
+          "label": "Author",
+          "color": "#8ee6a1",
+          "query": {
+            "type": "kind",
+            "kind": "author"
+          },
+          "enabled": true
+        },
+        {
+          "id": "r_custom",
+          "label": "My tag",
+          "color": "#ff9ecb",
+          "query": {
+            "type": "kind",
+            "kind": "custom"
+          },
+          "enabled": true
+        },
+        {
+          "id": "r_entity",
+          "label": "Named",
+          "color": "#c3a8ff",
+          "query": {
+            "type": "kind",
+            "kind": "entity"
+          },
+          "enabled": true
+        },
+        {
+          "id": "r_pattern",
+          "label": "Contains",
+          "color": "#9fd0c0",
+          "query": {
+            "type": "kind",
+            "kind": "pattern"
+          },
+          "enabled": true
+        },
+        {
+          "id": "r_date",
+          "label": "Year",
+          "color": "#7d8b9c",
+          "query": {
+            "type": "kind",
+            "kind": "date"
+          },
+          "enabled": true
+        }
+      ],
+      "updatedAt": 1768435200000
+    },
+    {
+      "workspaceId": "w_fin",
+      "mode": "tags",
+      "rules": [
+        {
+          "id": "r_topic",
+          "label": "Topic",
+          "color": "#6fb2ff",
+          "query": {
+            "type": "kind",
+            "kind": "topic"
+          },
+          "enabled": true
+        },
+        {
+          "id": "r_doctype",
+          "label": "Kind",
+          "color": "#ffc861",
+          "query": {
+            "type": "kind",
+            "kind": "doctype"
+          },
+          "enabled": true
+        },
+        {
+          "id": "r_author",
+          "label": "Author",
+          "color": "#8ee6a1",
+          "query": {
+            "type": "kind",
+            "kind": "author"
+          },
+          "enabled": true
+        },
+        {
+          "id": "r_custom",
+          "label": "My tag",
+          "color": "#ff9ecb",
+          "query": {
+            "type": "kind",
+            "kind": "custom"
+          },
+          "enabled": true
+        },
+        {
+          "id": "r_entity",
+          "label": "Named",
+          "color": "#c3a8ff",
+          "query": {
+            "type": "kind",
+            "kind": "entity"
+          },
+          "enabled": true
+        },
+        {
+          "id": "r_pattern",
+          "label": "Contains",
+          "color": "#9fd0c0",
+          "query": {
+            "type": "kind",
+            "kind": "pattern"
+          },
+          "enabled": true
+        },
+        {
+          "id": "r_date",
+          "label": "Year",
+          "color": "#7d8b9c",
+          "query": {
+            "type": "kind",
+            "kind": "date"
+          },
+          "enabled": true
+        }
+      ],
+      "updatedAt": 1768435200000
+    },
+    {
+      "workspaceId": "w_ops",
+      "mode": "tags",
+      "rules": [
+        {
+          "id": "r_topic",
+          "label": "Topic",
+          "color": "#6fb2ff",
+          "query": {
+            "type": "kind",
+            "kind": "topic"
+          },
+          "enabled": true
+        },
+        {
+          "id": "r_doctype",
+          "label": "Kind",
+          "color": "#ffc861",
+          "query": {
+            "type": "kind",
+            "kind": "doctype"
+          },
+          "enabled": true
+        },
+        {
+          "id": "r_author",
+          "label": "Author",
+          "color": "#8ee6a1",
+          "query": {
+            "type": "kind",
+            "kind": "author"
+          },
+          "enabled": true
+        },
+        {
+          "id": "r_custom",
+          "label": "My tag",
+          "color": "#ff9ecb",
+          "query": {
+            "type": "kind",
+            "kind": "custom"
+          },
+          "enabled": true
+        },
+        {
+          "id": "r_entity",
+          "label": "Named",
+          "color": "#c3a8ff",
+          "query": {
+            "type": "kind",
+            "kind": "entity"
+          },
+          "enabled": true
+        },
+        {
+          "id": "r_pattern",
+          "label": "Contains",
+          "color": "#9fd0c0",
+          "query": {
+            "type": "kind",
+            "kind": "pattern"
+          },
+          "enabled": true
+        },
+        {
+          "id": "r_date",
+          "label": "Year",
+          "color": "#7d8b9c",
+          "query": {
+            "type": "kind",
+            "kind": "date"
+          },
+          "enabled": true
+        }
+      ],
+      "updatedAt": 1768435200000
+    },
+    {
+      "workspaceId": "w_pub",
+      "mode": "tags",
+      "rules": [
+        {
+          "id": "r_topic",
+          "label": "Topic",
+          "color": "#6fb2ff",
+          "query": {
+            "type": "kind",
+            "kind": "topic"
+          },
+          "enabled": true
+        },
+        {
+          "id": "r_doctype",
+          "label": "Kind",
+          "color": "#ffc861",
+          "query": {
+            "type": "kind",
+            "kind": "doctype"
+          },
+          "enabled": true
+        },
+        {
+          "id": "r_author",
+          "label": "Author",
+          "color": "#8ee6a1",
+          "query": {
+            "type": "kind",
+            "kind": "author"
+          },
+          "enabled": true
+        },
+        {
+          "id": "r_custom",
+          "label": "My tag",
+          "color": "#ff9ecb",
+          "query": {
+            "type": "kind",
+            "kind": "custom"
+          },
+          "enabled": true
+        },
+        {
+          "id": "r_entity",
+          "label": "Named",
+          "color": "#c3a8ff",
+          "query": {
+            "type": "kind",
+            "kind": "entity"
+          },
+          "enabled": true
+        },
+        {
+          "id": "r_pattern",
+          "label": "Contains",
+          "color": "#9fd0c0",
+          "query": {
+            "type": "kind",
+            "kind": "pattern"
+          },
+          "enabled": true
+        },
+        {
+          "id": "r_date",
+          "label": "Year",
+          "color": "#7d8b9c",
+          "query": {
+            "type": "kind",
+            "kind": "date"
+          },
+          "enabled": true
+        }
+      ],
+      "updatedAt": 1768435200000
+    }
+  ]
+}

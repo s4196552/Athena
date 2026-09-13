@@ -1,0 +1,104 @@
+import type {
+  User, UserId, Org, OrgId, Workspace, WorkspaceId, Library, LibraryId,
+  LibraryGrant, FileRecord, FileId, TagRecord, SavedView, ColorGroupSet,
+  GraphMode, LibraryGraph, OrgMembership, WorkspaceMembership,
+} from './types';
+
+/* THE DATA BOUNDARY.
+ *
+ * Everything above this line is domain vocabulary; everything below it is a
+ * driver. The JSON driver reads committed fixtures; a future SQL driver runs
+ * queries. Nothing that calls these methods should be able to tell which.
+ *
+ * Two rules keep that true:
+ *
+ *   1. Every method that reads catalogue data takes a WorkspaceContext first.
+ *      Scope is applied inside the repository, never in a page, so a component
+ *      cannot forget it and leak another workspace's files.
+ *   2. Nothing here returns a driver-specific shape. When `applyScope` becomes
+ *      a SQL WHERE fragment, these signatures do not move.
+ */
+
+/** Resolved once per request. `grants` are the workspace's, already loaded. */
+export interface WorkspaceContext {
+  userId: UserId;
+  org: Org;
+  workspace: Workspace;
+  role: WorkspaceMembership['role'];
+  grants: LibraryGrant[];
+  /** Effective permission: min(workspace role, grant access). */
+  can(action: 'read' | 'tag' | 'manageGrants'): boolean;
+}
+
+export interface FileQuery {
+  /** Restrict to one granted library; omitted means all granted libraries. */
+  libraryId?: LibraryId;
+  /** kind -> names. OR within a kind, AND across kinds -- the desktop app's
+   *  algebra, preserved so URLs are portable between the two. */
+  tags?: Record<string, string[]>;
+  /** Substring match on file name. */
+  q?: string;
+  mediaType?: string;
+  limit?: number;
+  cursor?: string;
+}
+
+export interface FilePage {
+  files: FileRecord[];
+  total: number;
+  nextCursor: string | null;
+}
+
+export interface FacetGroup {
+  kind: string;
+  label: string;
+  values: { tagId: number; name: string; display: string; count: number }[];
+}
+
+export interface AthenaRepository {
+  // --- identity -----------------------------------------------------------
+  getUserById(id: UserId): Promise<User | null>;
+  getUserByEmail(email: string): Promise<User | null>;
+  listUsers(): Promise<User[]>;
+  getOrgMemberships(userId: UserId): Promise<OrgMembership[]>;
+  getWorkspaceMemberships(userId: UserId): Promise<WorkspaceMembership[]>;
+
+  // --- tenancy ------------------------------------------------------------
+  getOrg(id: OrgId): Promise<Org | null>;
+  getOrgBySlug(slug: string): Promise<Org | null>;
+  getWorkspaceBySlug(slug: string): Promise<Workspace | null>;
+  /** Every workspace this user may enter, across every org. */
+  listWorkspacesForUser(userId: UserId): Promise<Workspace[]>;
+  listWorkspacesInOrg(orgId: OrgId): Promise<Workspace[]>;
+  listMembersOfWorkspace(workspaceId: WorkspaceId): Promise<{ user: User; role: string }[]>;
+
+  // --- libraries and grants -----------------------------------------------
+  getLibrary(id: LibraryId): Promise<Library | null>;
+  getLibraryBySlug(slug: string): Promise<Library | null>;
+  listLibrariesOwnedBy(orgId: OrgId): Promise<Library[]>;
+  listGrantsForWorkspace(workspaceId: WorkspaceId): Promise<LibraryGrant[]>;
+  /** Who else can see this library, and through what scope. The sharing screen. */
+  listGrantsForLibrary(libraryId: LibraryId): Promise<LibraryGrant[]>;
+  /** How many files a given grant actually exposes. */
+  countForGrant(grant: LibraryGrant): Promise<number>;
+
+  // --- catalogue ----------------------------------------------------------
+  buildContext(userId: UserId, workspaceSlug: string): Promise<WorkspaceContext | null>;
+  listFiles(ctx: WorkspaceContext, query: FileQuery): Promise<FilePage>;
+  getFile(ctx: WorkspaceContext, id: FileId): Promise<FileRecord | null>;
+  listTags(ctx: WorkspaceContext, libraryId?: LibraryId): Promise<TagRecord[]>;
+  facets(ctx: WorkspaceContext, query: FileQuery): Promise<FacetGroup[]>;
+  /** Totals for the workspace overview. */
+  summary(ctx: WorkspaceContext): Promise<{
+    files: number; tags: number; bytes: number; libraries: number; mutations: number;
+  }>;
+
+  // --- graph --------------------------------------------------------------
+  /** The precomputed file graph for one library, unfiltered. Callers induce
+   *  the subgraph for a selection; they never recompute k-NN. */
+  getLibraryGraph(ctx: WorkspaceContext, libraryId: LibraryId): Promise<LibraryGraph | null>;
+
+  // --- per-workspace state ------------------------------------------------
+  listSavedViews(ctx: WorkspaceContext): Promise<SavedView[]>;
+  getColorGroups(ctx: WorkspaceContext, mode: GraphMode): Promise<ColorGroupSet | null>;
+}

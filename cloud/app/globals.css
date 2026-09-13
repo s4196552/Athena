@@ -1,0 +1,81 @@
+/* Design tokens.
+ *
+ * Ported verbatim from site/index.html and athena/web/static/app.css so the
+ * cloud app, the retired landing page and the desktop UI are recognisably one
+ * product. Do not "improve" these values in isolation -- app.css is the other
+ * copy, and the desktop app is deliberately dependency-free, so the two cannot
+ * share a file. Changing a colour here means changing it there too.
+ */
+
+:root {
+  --bg:         #0d1117;
+  --bg-raised:  #151b23;
+  --bg-sunk:    #0b0f15;
+  --line:       #262e39;
+  --line-soft:  #1d242d;
+  --text:       #e6edf3;
+  --muted:      #8b98a8;
+  --faint:      #5c6875;
+  --accent:     #4c9aff;
+  --accent-dim: #1b3a63;
+  --ok:         #3fb950;
+  --warn:       #d29922;
+  --danger:     #e35d8a;
+  --radius:     10px;
+  --topbar:     52px;
+
+  /* Tag-kind colours. The defaults for the graph's colour groups in tag mode,
+   * lifted from KIND_COLOUR in athena/web/static/app.js so a tag graph here
+   * looks like the same graph there. */
+  --kind-topic:   #6fb2ff;
+  --kind-doctype: #ffc861;
+  --kind-author:  #8ee6a1;
+  --kind-custom:  #ff9ecb;
+  --kind-entity:  #c3a8ff;
+  --kind-date:    #7d8b9c;
+
+  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, system-ui, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Consolas, monospace;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: var(--bg);
+  color: var(--text);
+  font: 15px/1.65 var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+a { color: var(--accent); }
+
+code, pre { font-family: var(--font-mono); }
+
+/* Visible focus everywhere. The graph canvas is keyboard-reachable and this is
+ * the only thing that makes that legible. */
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+.skip-link {
+  position: absolute;
+  left: -9999px;
+  top: 8px;
+  padding: 8px 14px;
+  background: var(--bg-raised);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  z-index: 100;
+}
+.skip-link:focus { left: 8px; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}

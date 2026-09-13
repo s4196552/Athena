@@ -4,6 +4,15 @@
 # this repo larger than most of the libraries Athena is meant to index.
 mock_library/
 
+# The Next.js app in cloud/ keeps its own .gitignore for build artefacts. Only
+# the catch-all lives here.
+#
+# Note what is deliberately NOT ignored: cloud/data/seed/ is the committed
+# catalogue the deployed demo reads. It is the product, not build output --
+# Vercel's build cannot see outside its Root Directory, so the seed has to be
+# generated locally and checked in.
+node_modules/
+
 # Python
 __pycache__/
 *.py[cod]
