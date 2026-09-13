@@ -7,6 +7,7 @@ import { quadtree, type Quadtree } from 'd3-quadtree';
 import { draw, radiusOf, type Band, type Frame } from './renderer';
 import type { SimParams } from './sim.worker';
 import { usePrefersReducedMotion } from '@/lib/useMediaQuery';
+import { useInk } from './useInk';
 import s from './graph.module.css';
 
 export interface GraphData {
@@ -58,6 +59,7 @@ export function GraphCanvas({
   const sizeRef = useRef({ w: 0, h: 0, dpr: 1 });
 
   const reducedMotion = usePrefersReducedMotion();
+  const ink = useInk();
 
   /* The hit-test index lives in a ref, not in state, and is built from inside
      the worker's message handler rather than during render. Two reasons:
@@ -128,9 +130,10 @@ export function GraphCanvas({
       curved,
       labelAll,
       labelGap,
+      ink,
     };
     draw(ctx, frame);
-  }, [data, adjacency, matches, showLabels, showOrphans, bands, curved, labelAll, labelGap]);
+  }, [data, adjacency, matches, showLabels, showOrphans, bands, curved, labelAll, labelGap, ink]);
 
   const schedule = useCallback(() => {
     if (rafRef.current) return;

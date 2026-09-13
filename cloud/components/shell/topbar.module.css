@@ -14,7 +14,7 @@
 .brand { display: flex; align-items: center; flex: 0 0 auto; }
 .mark {
   width: 22px; height: 22px; border-radius: 6px;
-  background: conic-gradient(from 210deg, #4c9aff, #a371f7, #3fb950, #4c9aff);
+  background: var(--brand-gradient);
 }
 
 /* ---------- switcher ---------- */
@@ -23,25 +23,25 @@
 .current {
   display: flex; align-items: center; gap: 7px;
   padding: 6px 10px;
-  font: inherit; font-size: 13px;
+  font: inherit; font-size: var(--fs-subhead);
   color: var(--text);
   background: transparent;
   border: 1px solid var(--line);
   border-radius: 8px;
   cursor: pointer;
 }
-.current:hover { background: #1a2230; border-color: var(--accent-dim); }
+.current:hover { background: var(--fill); border-color: var(--accent-dim); }
 
 .dot { width: 8px; height: 8px; border-radius: 50%; flex: 0 0 auto; }
 .org { color: var(--muted); }
 .sep { color: var(--faint); }
 .wsName { font-weight: 600; }
 .role {
-  font-size: 10px; text-transform: uppercase; letter-spacing: .06em;
+  font-size: var(--fs-caption); text-transform: uppercase; letter-spacing: var(--ls-eyebrow);
   color: var(--faint); border: 1px solid var(--line);
   border-radius: 4px; padding: 0 5px;
 }
-.caret { color: var(--faint); font-size: 10px; }
+.caret { color: var(--faint); font-size: var(--fs-caption); }
 
 .menu {
   position: absolute; top: calc(100% + 6px); left: 0;
@@ -49,7 +49,7 @@
   background: var(--bg-raised);
   border: 1px solid var(--line);
   border-radius: var(--radius);
-  box-shadow: 0 14px 40px #0009;
+  box-shadow: 0 14px 40px var(--shadow-color);
   padding: 6px;
   z-index: 50;
 }
@@ -57,26 +57,26 @@
 .menuGroup + .menuGroup { border-top: 1px solid var(--line-soft); }
 .menuOrg {
   margin: 4px 8px 5px;
-  font-size: 10px; text-transform: uppercase; letter-spacing: .08em;
+  font-size: var(--fs-caption); text-transform: uppercase; letter-spacing: var(--ls-eyebrow);
   color: var(--faint); font-weight: 600;
 }
 .menuItem {
   display: flex; align-items: center; gap: 8px;
   padding: 7px 9px; border-radius: 7px;
-  font-size: 13px; color: var(--text); text-decoration: none;
+  font-size: var(--fs-subhead); color: var(--text); text-decoration: none;
 }
-.menuItem:hover { background: #1f2836; }
-.menuItemActive { background: #1f2836; font-weight: 600; }
+.menuItem:hover { background: var(--fill-2); }
+.menuItemActive { background: var(--fill-2); font-weight: 600; }
 
 /* ---------- nav ---------- */
 .nav { display: flex; gap: 2px; margin-left: 6px; overflow-x: auto; }
 .link {
   display: inline-flex; align-items: center; min-height: 30px;
   padding: 6px 11px; border-radius: 7px;
-  font-size: 13px; color: var(--muted); text-decoration: none;
+  font-size: var(--fs-subhead); color: var(--muted); text-decoration: none;
   white-space: nowrap;
 }
-.link:hover { color: var(--text); background: #1f2836; }
+.link:hover { color: var(--text); background: var(--fill-2); }
 .link:active { background: var(--bg-sunk); }
 
 /* Styled from the attribute the markup already sets, so the look and the
@@ -84,17 +84,17 @@
    "convey information with more than color alone" asks for. */
 .link[aria-current='page'] {
   color: var(--text);
-  background: #1f2836;
+  background: var(--fill-2);
   font-weight: 600;
   box-shadow: inset 0 -2px 0 var(--ws-accent, var(--accent));
 }
 
 .right { margin-left: auto; display: flex; align-items: center; gap: 12px; flex: 0 0 auto; }
-.who { display: flex; align-items: center; gap: 7px; font-size: 13px; color: var(--muted); }
+.who { display: flex; align-items: center; gap: 7px; font-size: var(--fs-subhead); color: var(--muted); }
 .avatar { width: 20px; height: 20px; border-radius: 50%; border: 1px solid #ffffff1a; }
 
 .signout {
-  font: inherit; font-size: 12.5px;
+  font: inherit; font-size: var(--fs-subhead);
   color: var(--muted); background: transparent;
   border: 1px solid var(--line); border-radius: 7px;
   padding: 5px 10px; cursor: pointer;
@@ -103,4 +103,47 @@
 
 @media (max-width: 720px) {
   .org, .role, .who { display: none; }
+}
+
+/* ---------- appearance ---------- */
+.theme {
+  display: inline-flex;
+  gap: 1px;
+  padding: 2px;
+  background: var(--bg-sunk);
+  border: 1px solid var(--separator);
+  border-radius: var(--r-sm);
+  flex: 0 0 auto;
+}
+.themeBtn {
+  display: grid; place-items: center;
+  width: 26px; height: 22px;
+  font: inherit; cursor: pointer;
+  color: var(--label-3);
+  background: transparent;
+  border: 0; border-radius: 4px;
+}
+.themeBtn:hover { color: var(--label); background: var(--fill); }
+.themeBtn:active { background: var(--fill-2); }
+.themeBtn[aria-pressed='true'] {
+  color: var(--label);
+  background: var(--fill-2);
+  box-shadow: inset 0 0 0 1px var(--separator);
+}
+/* Drawn small to sit in a 52px bar; the target is grown to the HIG's floor,
+   and to the full 44 on a touch screen. */
+.themeBtn { position: relative; }
+.themeBtn::after { content: ''; position: absolute; inset: -3px -1px; }
+@media (pointer: coarse) { .themeBtn::after { inset: -11px -9px; } }
+
+.srOnly {
+  position: absolute; width: 1px; height: 1px;
+  padding: 0; margin: -1px; overflow: hidden;
+  clip-path: inset(50%); white-space: nowrap; border: 0;
+}
+
+@media (max-width: 480px) {
+  /* The two things that can go at phone width without losing a capability:
+     the appearance control (the system setting still applies) and the brand. */
+  .theme { display: none; }
 }

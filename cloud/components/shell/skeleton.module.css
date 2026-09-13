@@ -23,7 +23,10 @@
   position: absolute;
   inset: 0;
   transform: translateX(-100%);
-  background: linear-gradient(90deg, transparent, #ffffff0d, transparent);
+  /* A white sweep is invisible on a light ground, so the shimmer is a tint of
+     the text colour, which flips with the appearance. */
+  background: linear-gradient(90deg, transparent,
+    color-mix(in srgb, var(--label) 7%, transparent), transparent);
   animation: sweep 1.4s ease-in-out infinite;
 }
 

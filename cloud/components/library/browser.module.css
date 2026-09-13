@@ -13,31 +13,31 @@
 .modes { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
 .mode {
   display: inline-flex; align-items: center; gap: 5px;
-  padding: 5px 11px; font: inherit; font-size: 12.5px;
+  padding: 5px 11px; font: inherit; font-size: var(--fs-subhead);
   color: var(--muted); background: transparent; border: 0; cursor: pointer;
 }
-.mode:hover { color: var(--text); background: #1f2836; }
-.modeOn { color: #06101f; background: var(--ws-accent, var(--accent)); font-weight: 500; }
+.mode:hover { color: var(--text); background: var(--fill-2); }
+.modeOn { color: var(--on-accent); background: var(--ws-accent, var(--accent)); font-weight: 500; }
 
 /* The iCloud/Finder zoom control: a small square, a slider, a larger square.
    No numbers -- the sizes are a feel, not a measurement. */
 .sizer { display: inline-flex; align-items: center; gap: 8px; }
 .sizer input { width: 116px; cursor: pointer; }
 .sizer input:disabled { opacity: .35; cursor: default; }
-.sizeIcon { font-size: 8px; color: var(--faint); line-height: 1; }
-.sizeIconLarge { font-size: 14px; color: var(--faint); line-height: 1; }
+.sizeIcon { font-size: var(--fs-caption); color: var(--faint); line-height: 1; }
+.sizeIconLarge { font-size: var(--fs-callout); color: var(--faint); line-height: 1; }
 
 /* ---------- section headings (auto mode only) ---------- */
 .sectionLabel {
   display: flex; align-items: baseline; gap: 8px;
-  font-size: 11px; text-transform: uppercase; letter-spacing: .08em;
+  font-size: var(--fs-caption); text-transform: uppercase; letter-spacing: var(--ls-eyebrow);
   color: var(--faint); font-weight: 600;
   margin: 26px 0 10px;
 }
 .sectionLabel:first-of-type { margin-top: 0; }
 .sectionCount {
   text-transform: none; letter-spacing: 0; font-weight: 400;
-  color: var(--faint); font-size: 11.5px;
+  color: var(--faint); font-size: var(--fs-footnote);
 }
 
 /* ---------- grid ---------- */
@@ -64,16 +64,16 @@
   background: #0009; color: #ffffffcc; border-radius: 4px; padding: 2px;
 }
 .ext {
-  font-size: 10px; text-transform: uppercase; letter-spacing: .07em;
+  font-size: var(--fs-caption); text-transform: uppercase; letter-spacing: var(--ls-eyebrow);
   color: #ffffffcc; font-weight: 600;
   background: #0009; border-radius: 4px; padding: 2px 6px;
 }
 .name {
-  margin: 0 0 2px; font-size: 12px; font-weight: 500;
+  margin: 0 0 2px; font-size: var(--fs-footnote); font-weight: 500;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 .meta {
-  margin: 0; font-size: 11px; color: var(--faint);
+  margin: 0; font-size: var(--fs-caption); color: var(--faint);
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 
@@ -82,7 +82,7 @@
   border: 1px solid var(--line); border-radius: var(--radius);
   overflow-x: auto;
 }
-.list { width: 100%; border-collapse: collapse; font-size: 13px; }
+.list { width: 100%; border-collapse: collapse; font-size: var(--fs-subhead); }
 .list th, .list td {
   text-align: left; padding: 6px 12px; vertical-align: top;
   border-bottom: 1px solid var(--line-soft);
@@ -98,12 +98,12 @@
  * never scrolls vertically -- the page does -- so 0 is the correct offset. */
 .list thead th {
   position: sticky; top: 0; z-index: 1;
-  font-size: 10px; text-transform: uppercase; letter-spacing: .07em;
+  font-size: var(--fs-caption); text-transform: uppercase; letter-spacing: var(--ls-eyebrow);
   color: var(--faint); font-weight: 600;
   background: var(--bg-raised);
 }
 .list tbody tr { cursor: pointer; }
-.list tbody tr:hover { background: #161d28; }
+.list tbody tr:hover { background: var(--fill); }
 .rowOn { background: var(--accent-dim) !important; }
 
 /* The name gets the room it needs and the folder gets enough to be useful --
@@ -140,7 +140,7 @@
 }
 .machineTag, .userTag, .correctedTag {
   display: inline-flex; align-items: center; gap: 3px;
-  font-size: 10px; padding: 1px 6px 1px 4px; border-radius: 999px;
+  font-size: var(--fs-caption); padding: 1px 6px 1px 4px; border-radius: 999px;
   line-height: 1.5;
 }
 .machineTag { color: var(--faint); background: var(--bg-sunk); border: 1px solid var(--line-soft); }
@@ -148,7 +148,7 @@
    machine's -- the same distinction asset_tag.source makes in the schema. */
 .userTag { border: 1px solid currentColor; }
 .correctedTag { color: var(--faint); border: 1px dashed var(--line); }
-.moreTags { font-size: 10px; color: var(--faint); }
+.moreTags { font-size: var(--fs-caption); color: var(--faint); }
 
 @media (max-width: 720px) {
   .colDate, .colWhere { display: none; }

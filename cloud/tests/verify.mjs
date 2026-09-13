@@ -354,6 +354,51 @@ section('paging and search');
 }
 
 // ===========================================================================
+section('appearance');
+// ===========================================================================
+{
+  /* The choice is stamped on <html> by the SERVER, from a cookie. That is the
+     whole design: anything the browser holds is unknown at render time, so the
+     page would be emitted in one appearance and corrected in the other -- a
+     flash on every navigation, and the same class of hydration mismatch that
+     React #418 was (see lib/format.ts). */
+  const html = (body) => (body.match(/<html[^>]*>/) ?? [''])[0];
+
+  const none = await get('/login');
+  check('no choice leaves the system to decide', !html(none.body).includes('data-theme'),
+    'no data-theme attribute');
+
+  const light = await get('/login', 'athena_theme=light');
+  check('an explicit light choice is stamped server-side',
+    html(light.body).includes('data-theme="light"'));
+
+  const dark = await get('/login', 'athena_theme=dark');
+  check('an explicit dark choice is stamped server-side',
+    html(dark.body).includes('data-theme="dark"'));
+
+  // The cookie is not httpOnly, so a viewer can put anything in it.
+  const junk = await get('/login', 'athena_theme=neon');
+  check('an unrecognised appearance falls back to the system',
+    !html(junk.body).includes('data-theme'));
+
+  check('the appearance control is offered', /aria-label="Appearance"/.test(
+    (await get('/w/hadesmedia-ops', iris)).body));
+
+  // next/font downloads at build time and serves from this origin, which is
+  // what lets the CSP stay at `font-src 'self'`.
+  const css = [...none.body.matchAll(/\/_next\/static\/chunks\/[\w.-]+\.css/g)].map((m) => m[0]);
+  let faces = 0;
+  let external = 0;
+  for (const href of new Set(css)) {
+    const sheet = await fetch(BASE + href).then((r) => r.text());
+    faces += (sheet.match(/@font-face/g) ?? []).length;
+    external += (sheet.match(/url\(https?:\/\//g) ?? []).length;
+  }
+  check('the typeface is served from this origin', faces > 0 && external === 0,
+    `${faces} @font-face rules, ${external} external`);
+}
+
+// ===========================================================================
 section('colour groups');
 // ===========================================================================
 {

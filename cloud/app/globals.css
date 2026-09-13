@@ -1,32 +1,248 @@
 /* Design tokens.
  *
- * Ported verbatim from site/index.html and athena/web/static/app.css so the
- * cloud app, the retired landing page and the desktop UI are recognisably one
- * product. Do not "improve" these values in isolation -- app.css is the other
- * copy, and the desktop app is deliberately dependency-free, so the two cannot
- * share a file. Changing a colour here means changing it there too.
+ * Structured against Apple's Human Interface Guidelines foundations. Three
+ * things that file did not have before, and that the rest of the app now leans
+ * on:
+ *
+ *   1. SEMANTIC COLOUR, in two appearances. Apple's vocabulary -- four label
+ *      levels, three background levels, separators and fills -- rather than
+ *      thirteen names describing what a colour looks like. A name that says
+ *      what a colour is FOR is the only kind that can have a light value and a
+ *      dark one.
+ *   2. A TYPE SCALE. There were twenty distinct font sizes in this app, seven
+ *      of them half-pixel, and five different page-title sizes. These are
+ *      Apple's semantic text styles at macOS density (13pt default) rather
+ *      than iOS (17pt), because this is a dense desktop data app.
+ *   3. A SPACING RAMP. There were ~72 unique padding values and gaps on every
+ *      integer from 1 to 12.
+ *
+ * ---------------------------------------------------------------------------
+ * HOW THE TWO APPEARANCES WORK
+ *
+ * Every hex value is written exactly once, as a --dark-* or --light-* constant.
+ * The semantic names are then MAPPED to one set or the other. That mapping
+ * appears twice -- once for an explicit choice, once for the system default --
+ * which is unavoidable in plain CSS, but it maps names to names, so a colour
+ * can never drift between the two.
+ *
+ * Default is the system setting. The toggle in the top bar writes
+ * data-theme="light" | "dark" to <html> and only then overrides it, which keeps
+ * Apple's "respond to the systemwide appearance choice" as the path of least
+ * resistance. See lib/theme/store.ts for why that lives in a cookie.
+ *
+ * app.css in the desktop app is the other copy of the dark palette. The two
+ * cannot share a file -- the desktop app is deliberately dependency-free -- so
+ * a change to the dark values here is a change there too.
  */
 
 :root {
-  --bg:         #0d1117;
-  --bg-raised:  #151b23;
-  --bg-sunk:    #0b0f15;
-  --line:       #262e39;
-  --line-soft:  #1d242d;
-  --text:       #e6edf3;
-  --muted:      #8b98a8;
-  --faint:      #5c6875;
-  --accent:     #4c9aff;
-  --accent-dim: #1b3a63;
-  --ok:         #3fb950;
-  --warn:       #d29922;
-  --danger:     #e35d8a;
-  --radius:     10px;
-  --topbar:     52px;
+  /* ---------------- palette constants: dark ---------------- */
+  /* Contrast against --dark-bg-base / raised / elevated / selected:
+       label    16.49  15.58  14.52  11.42
+       label-2  10.42   9.85   9.18   7.21
+       label-3   6.55   6.19   5.77   4.53
+       accent    6.75   6.38   5.95   4.67
+     label-4 is 3.85 on base and is therefore NOT a text colour -- see below. */
+  --dark-label:    #e9eef5;
+  --dark-label-2:  #b4c0ce;
+  --dark-label-3:  #8b98a8;
+  --dark-label-4:  #64717f;
+  --dark-bg-base:      #0b0f14;
+  --dark-bg-raised:    #11161d;
+  --dark-bg-elevated:  #171d26;
+  --dark-bg-sunk:      #070a0e;
+  --dark-separator:      #242c37;
+  --dark-separator-soft: #1b222b;
+  --dark-fill:    #1a2230;
+  --dark-fill-2:  #1f2836;
+  --dark-fill-3:  #253041;
+  --dark-fill-selected: #12314f;
+  --dark-accent:  #4c9aff;
+  --dark-on-accent: #06101f;
+  /* Canvas ink. A <canvas> has no cascade, so the graph's non-node colours
+     have to be readable values rather than CSS rules; renderer.ts used to
+     hard-code these, which is why the graph stayed dark when everything
+     around it went light. */
+  --dark-canvas-edge:       rgba(120, 138, 160, 0.20);
+  --dark-canvas-edge-faint: rgba(120, 138, 160, 0.05);
+  --dark-canvas-edge-lit:   rgba(190, 210, 235, 0.45);
+  --dark-canvas-ring:       #e9eef5;
+  --dark-canvas-label:      rgba(230, 237, 243, 0.92);
+  --dark-canvas-band:       rgba(120, 138, 160, 0.062);
+  --dark-canvas-band-muted: rgba(120, 138, 160, 0.035);
+  --dark-canvas-band-label: rgba(150, 168, 190, 0.65);
+
+  --dark-ok:      #3fb950;
+  --dark-warn:    #d29922;
+  --dark-danger:  #e35d8a;
+  /* Text drawn ON a danger fill. It has to flip with the appearance: near-black
+     is 5.61:1 on the dark pink but only 3.01:1 on the light one, and white is
+     the other way round (3.39 vs 6.32). One value cannot serve both. */
+  --dark-on-danger: #1a0c12;
+
+  /* ---------------- palette constants: light ---------------- */
+  /* Contrast against --light-bg-base / raised / selected:
+       label    16.78  17.87  14.64
+       label-2   8.49   9.04   7.40
+       label-3   5.87   6.25   5.12
+       accent    5.31   5.65   4.63                                        */
+  --light-label:   #111820;
+  --light-label-2: #3f4a56;
+  --light-label-3: #55626f;
+  --light-label-4: #8a95a1;
+  --light-bg-base:     #f6f8fa;
+  --light-bg-raised:   #ffffff;
+  --light-bg-elevated: #ffffff;
+  --light-bg-sunk:     #eef1f5;
+  --light-separator:      #d7dde5;
+  --light-separator-soft: #e6eaf0;
+  --light-fill:   #eef1f5;
+  --light-fill-2: #e5eaf1;
+  --light-fill-3: #dbe2eb;
+  --light-fill-selected: #dbeafe;
+  --light-accent: #0a63d1;
+  --light-on-accent: #ffffff;
+  --light-canvas-edge:       rgba(58, 78, 103, 0.30);
+  --light-canvas-edge-faint: rgba(58, 78, 103, 0.09);
+  --light-canvas-edge-lit:   rgba(16, 42, 78, 0.55);
+  --light-canvas-ring:       #111820;
+  --light-canvas-label:      rgba(17, 24, 32, 0.92);
+  --light-canvas-band:       rgba(58, 78, 103, 0.075);
+  --light-canvas-band-muted: rgba(58, 78, 103, 0.04);
+  --light-canvas-band-label: rgba(58, 78, 103, 0.78);
+
+  --light-ok:     #1a7f37;
+  --light-warn:   #8a6100;
+  --light-danger: #b3235f;
+  --light-on-danger: #ffffff;
+
+  /* ---------------- the mapping: dark is the default ---------------- */
+  --label:   var(--dark-label);
+  --label-2: var(--dark-label-2);
+  --label-3: var(--dark-label-3);
+  --label-4: var(--dark-label-4);
+  --bg-base:     var(--dark-bg-base);
+  --bg-raised:   var(--dark-bg-raised);
+  --bg-elevated: var(--dark-bg-elevated);
+  --bg-sunk:     var(--dark-bg-sunk);
+  --separator:      var(--dark-separator);
+  --separator-soft: var(--dark-separator-soft);
+  --fill:   var(--dark-fill);
+  --fill-2: var(--dark-fill-2);
+  --fill-3: var(--dark-fill-3);
+  --fill-selected: var(--dark-fill-selected);
+  --accent:    var(--dark-accent);
+  --on-accent: var(--dark-on-accent);
+  --ok:     var(--dark-ok);
+  --warn:   var(--dark-warn);
+  --danger: var(--dark-danger);
+  --on-danger: var(--dark-on-danger);
+  --canvas-edge:       var(--dark-canvas-edge);
+  --canvas-edge-faint: var(--dark-canvas-edge-faint);
+  --canvas-edge-lit:   var(--dark-canvas-edge-lit);
+  --canvas-ring:       var(--dark-canvas-ring);
+  --canvas-label:      var(--dark-canvas-label);
+  --canvas-band:       var(--dark-canvas-band);
+  --canvas-band-muted: var(--dark-canvas-band-muted);
+  --canvas-band-label: var(--dark-canvas-band-label);
+  --shadow-color: #0009;
+
+  /* ---------------- compatibility aliases ----------------
+   * The names the stylesheets were written against. Keeping them means light
+   * mode and the contrast fixes reach all eleven CSS modules through this one
+   * file, instead of through eleven simultaneous rewrites.
+   *
+   * --faint is the important one: it was #5c6875, used 59 times -- more often
+   * than --text -- almost entirely on 10-12px metadata, where it measured
+   * 3.33:1 on the page and 2.02:1 on a selected row. It now resolves to
+   * --label-3, which clears 4.5:1 everywhere it is used.
+   */
+  --bg:         var(--bg-base);
+  --text:       var(--label);
+  --muted:      var(--label-2);
+  --faint:      var(--label-3);
+  --line:       var(--separator);
+  --line-soft:  var(--separator-soft);
+  --accent-dim: var(--fill-selected);
+
+  /* ---------------- type ----------------
+   * Apple's semantic text styles. Nothing is below 11px, which is the HIG's
+   * stated iOS minimum, and no size is fractional.
+   *
+   * Weights are set per rule rather than tokenised, because the audit found
+   * only four in use and each is a property of the component. Ultralight, Thin
+   * and Light are not used anywhere: "avoid light font weights".
+   */
+  --fs-large-title: 40px; --lh-large-title: 44px; --ls-large-title: -0.022em;
+  --fs-title-1:     28px; --lh-title-1:     34px; --ls-title-1:     -0.018em;
+  --fs-title-2:     22px; --lh-title-2:     28px; --ls-title-2:     -0.012em;
+  --fs-title-3:     17px; --lh-title-3:     24px; --ls-title-3:     -0.008em;
+  --fs-headline:    15px; --lh-headline:    20px;
+  --fs-body:        15px; --lh-body:        22px;
+  --fs-callout:     14px; --lh-callout:     19px;
+  --fs-subhead:     13px; --lh-subhead:     18px;
+  --fs-footnote:    12px; --lh-footnote:    16px;
+  --fs-caption:     11px; --lh-caption:     14px; --ls-caption:     0.01em;
+
+  /* The one uppercase eyebrow treatment. The audit found the same semantic
+     element rendered eight different ways -- 12px/.09em, 11px/.08em,
+     10.5px/.07em, 10px/.06em and so on. */
+  --ls-eyebrow: 0.06em;
+
+  /* ---------------- space, on a 4pt grid ---------------- */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 48px;
+  --space-8: 64px;
+
+  /* ---------------- shape ---------------- */
+  --r-sm: 6px;
+  --r-md: 10px;
+  --r-lg: 14px;
+  --r-pill: 999px;
+  --radius: var(--r-md); /* alias: the original single radius token */
+
+  /* Elevation is carried by BACKGROUND -- base, raised, elevated -- as the
+     Dark Mode guidance describes. Shadow is only for layers that genuinely
+     float above the page. */
+  --shadow-sm: 0 1px 2px var(--shadow-color);
+  --shadow-md: 0 8px 24px var(--shadow-color);
+  --shadow-lg: 0 14px 40px var(--shadow-color);
+
+  /* ---------------- controls ----------------
+   * 44pt is the HIG default and 28pt the floor. Controls drawn smaller than
+   * this inside dense rows keep their drawn size and grow their hit area
+   * instead; see the ::after pattern in detail/albums/colors. */
+  --control-sm: 28px;
+  --control-md: 34px;
+  --control-lg: 44px;
+
+  /* ---------------- motion ----------------
+   * "Add motion purposefully" -- these are for state changes a person caused,
+   * never for decoration. */
+  --motion-fast: 120ms;
+  --motion-base: 200ms;
+  --ease: cubic-bezier(0.2, 0, 0, 1);
+
+  /* ---------------- layout ----------------
+   * Breakpoints cannot be custom properties -- a media query is evaluated
+   * before variables resolve -- so they are a convention rather than a token:
+   * 480 / 640 / 720 / 900 / 1200. */
+  --page-max: 1040px;
+  --measure: 68ch;
+  --gutter: var(--space-5);
+  --topbar: 52px;
 
   /* Tag-kind colours. The defaults for the graph's colour groups in tag mode,
    * lifted from KIND_COLOUR in athena/web/static/app.js so a tag graph here
-   * looks like the same graph there. */
+   * looks like the same graph there. These are DATA, not chrome: they are also
+   * the seeded rule colours in data/seed/tenancy.json, and they read against
+   * both appearances because they sit on a canvas that stays dark-ish either
+   * way. */
   --kind-topic:   #6fb2ff;
   --kind-doctype: #ffc861;
   --kind-author:  #8ee6a1;
@@ -34,24 +250,104 @@
   --kind-entity:  #c3a8ff;
   --kind-date:    #7d8b9c;
 
-  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, system-ui, sans-serif;
+  /* The brand mark. Identical in both appearances by intent -- it is an
+     identity, not chrome -- but it was written out verbatim in three separate
+     stylesheets, and its purple appeared in no token at all. */
+  --brand-gradient: conic-gradient(from 210deg, #4c9aff, #a371f7, #3fb950, #4c9aff);
+
+  --font-sans: var(--font-inter), -apple-system, BlinkMacSystemFont, "Segoe UI",
+    system-ui, sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Consolas, monospace;
+}
+
+/* ---------------- light: chosen explicitly ---------------- */
+:root[data-theme='light'] {
+  color-scheme: light;
+  --label:   var(--light-label);
+  --label-2: var(--light-label-2);
+  --label-3: var(--light-label-3);
+  --label-4: var(--light-label-4);
+  --bg-base:     var(--light-bg-base);
+  --bg-raised:   var(--light-bg-raised);
+  --bg-elevated: var(--light-bg-elevated);
+  --bg-sunk:     var(--light-bg-sunk);
+  --separator:      var(--light-separator);
+  --separator-soft: var(--light-separator-soft);
+  --fill:   var(--light-fill);
+  --fill-2: var(--light-fill-2);
+  --fill-3: var(--light-fill-3);
+  --fill-selected: var(--light-fill-selected);
+  --accent:    var(--light-accent);
+  --on-accent: var(--light-on-accent);
+  --ok:     var(--light-ok);
+  --warn:   var(--light-warn);
+  --danger: var(--light-danger);
+  --on-danger: var(--light-on-danger);
+  --canvas-edge:       var(--light-canvas-edge);
+  --canvas-edge-faint: var(--light-canvas-edge-faint);
+  --canvas-edge-lit:   var(--light-canvas-edge-lit);
+  --canvas-ring:       var(--light-canvas-ring);
+  --canvas-label:      var(--light-canvas-label);
+  --canvas-band:       var(--light-canvas-band);
+  --canvas-band-muted: var(--light-canvas-band-muted);
+  --canvas-band-label: var(--light-canvas-band-label);
+  --shadow-color: #0f172a26;
+}
+
+/* ---------------- light: inherited from the system ----------------
+ * Same mapping, applied only when nothing has been chosen. The :not() is what
+ * lets an explicit dark choice survive a light system setting. */
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme='dark']) {
+    color-scheme: light;
+    --label:   var(--light-label);
+    --label-2: var(--light-label-2);
+    --label-3: var(--light-label-3);
+    --label-4: var(--light-label-4);
+    --bg-base:     var(--light-bg-base);
+    --bg-raised:   var(--light-bg-raised);
+    --bg-elevated: var(--light-bg-elevated);
+    --bg-sunk:     var(--light-bg-sunk);
+    --separator:      var(--light-separator);
+    --separator-soft: var(--light-separator-soft);
+    --fill:   var(--light-fill);
+    --fill-2: var(--light-fill-2);
+    --fill-3: var(--light-fill-3);
+    --fill-selected: var(--light-fill-selected);
+    --accent:    var(--light-accent);
+    --on-accent: var(--light-on-accent);
+    --ok:     var(--light-ok);
+    --warn:   var(--light-warn);
+    --danger: var(--light-danger);
+    --on-danger: var(--light-on-danger);
+    --canvas-edge:       var(--light-canvas-edge);
+    --canvas-edge-faint: var(--light-canvas-edge-faint);
+    --canvas-edge-lit:   var(--light-canvas-edge-lit);
+    --canvas-ring:       var(--light-canvas-ring);
+    --canvas-label:      var(--light-canvas-label);
+    --canvas-band:       var(--light-canvas-band);
+    --canvas-band-muted: var(--light-canvas-band-muted);
+    --canvas-band-label: var(--light-canvas-band-label);
+    --shadow-color: #0f172a26;
+  }
 }
 
 * { box-sizing: border-box; }
 
-/* Without this, the browser assumes a light page and draws the things CSS does
-   not reach -- scrollbars, <input type=range> thumbs, checkboxes, the search
-   field's clear button, form autofill -- in their light variants, on a
-   near-black background. Declaring it is the whole fix. */
+/* Declared so the browser draws what CSS cannot reach -- scrollbars, range
+   thumbs, checkboxes, the search field's clear button, autofill -- in the
+   matching variant. Without it every one of those rendered light on a
+   near-black page. The two theme blocks above override it. */
 html { color-scheme: dark; }
 
 html, body {
   margin: 0;
   padding: 0;
-  background: var(--bg);
-  color: var(--text);
-  font: 15px/1.65 var(--font-sans);
+  background: var(--bg-base);
+  color: var(--label);
+  font-family: var(--font-sans);
+  font-size: var(--fs-body);
+  line-height: 1.6;
   -webkit-font-smoothing: antialiased;
 }
 
@@ -60,24 +356,25 @@ a { color: var(--accent); }
 code, pre { font-family: var(--font-mono); }
 
 /* Visible focus everywhere. The graph canvas is keyboard-reachable and this is
- * the only thing that makes that legible. */
+ * the only thing that makes that legible. It follows the workspace accent, so
+ * the ring belongs to the chrome it appears in. */
 :focus-visible {
-  outline: 2px solid var(--accent);
+  outline: 2px solid var(--ws-accent, var(--accent));
   outline-offset: 2px;
-  border-radius: 4px;
+  border-radius: var(--r-sm);
 }
 
 .skip-link {
   position: absolute;
   left: -9999px;
-  top: 8px;
-  padding: 8px 14px;
-  background: var(--bg-raised);
-  border: 1px solid var(--line);
-  border-radius: 8px;
+  top: var(--space-2);
+  padding: var(--space-2) var(--space-4);
+  background: var(--bg-elevated);
+  border: 1px solid var(--separator);
+  border-radius: var(--r-sm);
   z-index: 100;
 }
-.skip-link:focus { left: 8px; }
+.skip-link:focus { left: var(--space-2); }
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {

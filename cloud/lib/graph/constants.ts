@@ -40,7 +40,14 @@ export const MAX_FILE_NODES = 4000;
 
 /** Unmatched nodes: a desaturated cousin of --faint, quiet enough that the
  *  coloured clusters read against it. */
-export const DEFAULT_NODE_COLOR = '#495663';
+/* Nodes no colour rule matched.
+ *
+ * Was #495663, which is 2.56:1 against the page -- under the 3:1 the HIG gives
+ * for a meaningful graphical object, and these are not decoration: an unmatched
+ * node is a file, and being unable to see it is being unable to see that it is
+ * there. #677686 clears 4:1 against BOTH appearances, which matters because a
+ * canvas colour cannot be swapped by the cascade. */
+export const DEFAULT_NODE_COLOR = '#677686';
 
 // ---------------------------------------------------------------------------
 //  Pyramid (layered) graph

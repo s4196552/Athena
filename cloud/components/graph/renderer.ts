@@ -54,7 +54,44 @@ export interface Frame {
    *  that gap too small on screen to fit one, which is cheaper and steadier
    *  than measuring every string. */
   labelGap?: number;
+
+  /** Ink for everything the canvas draws that is not a node's own colour.
+   *
+   *  A canvas has no cascade, so these cannot be CSS: every value here was
+   *  previously a literal in this file, which meant the graph stayed dark when
+   *  the rest of the app went light. GraphCanvas reads them from the computed
+   *  style of the document and passes them down. */
+  ink?: Ink;
 }
+
+export interface Ink {
+  /** Edges at rest, and the hairline pass under them. */
+  edge: string;
+  edgeFaint: string;
+  /** An edge touching the hovered node. */
+  edgeLit: string;
+  /** The ring around the hovered node. */
+  ring: string;
+  /** Node labels. */
+  label: string;
+  /** Pyramid strata and their captions. */
+  band: string;
+  bandMuted: string;
+  bandLabel: string;
+}
+
+/** The dark values, which are what this file used to hard-code. Used when a
+ *  caller passes no ink -- the pyramid tests call draw() without a document. */
+export const DARK_INK: Ink = {
+  edge: 'rgba(120,138,160,0.20)',
+  edgeFaint: 'rgba(120,138,160,0.05)',
+  edgeLit: 'rgba(190,210,235,0.45)',
+  ring: '#e9eef5',
+  label: 'rgba(230,237,243,0.92)',
+  band: 'rgba(120,138,160,0.062)',
+  bandMuted: 'rgba(120,138,160,0.035)',
+  bandLabel: 'rgba(150,168,190,0.65)',
+};
 
 export interface Band {
   y: number;
@@ -82,6 +119,7 @@ export function radiusIn(
 }
 
 export function draw(ctx: CanvasRenderingContext2D, frame: Frame): void {
+  const ink = frame.ink ?? DARK_INK;
   const { positions, edges, degree, colors, transform, width, height, dpr } = frame;
 
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -95,7 +133,7 @@ export function draw(ctx: CanvasRenderingContext2D, frame: Frame): void {
   if (frame.bands?.length) {
     const pad = 34;
     for (const band of frame.bands) {
-      ctx.fillStyle = band.muted ? 'rgba(120,138,160,0.035)' : 'rgba(120,138,160,0.062)';
+      ctx.fillStyle = band.muted ? ink.bandMuted : ink.band;
       ctx.fillRect(
         band.x0 - pad, band.y - band.height / 2,
         (band.x1 - band.x0) + pad * 2, band.height,
@@ -103,7 +141,7 @@ export function draw(ctx: CanvasRenderingContext2D, frame: Frame): void {
     }
     // Row captions sit outside the band to its left, at a constant on-screen
     // size, so they stay readable at any zoom without colliding with a node.
-    ctx.fillStyle = 'rgba(150,168,190,0.65)';
+    ctx.fillStyle = ink.bandLabel;
     ctx.font = `${11 / transform.k}px -apple-system, "Segoe UI", system-ui, sans-serif`;
     ctx.textAlign = 'right';
     ctx.textBaseline = 'middle';
@@ -148,11 +186,11 @@ export function draw(ctx: CanvasRenderingContext2D, frame: Frame): void {
 
   ctx.lineWidth = Math.max(0.35, 0.7 / transform.k);
   if (hasDim) {
-    ctx.strokeStyle = 'rgba(120,138,160,0.05)';
+    ctx.strokeStyle = ink.edgeFaint;
     ctx.stroke(dimPath);
   }
   if (hasLit) {
-    ctx.strokeStyle = dimming ? 'rgba(190,210,235,0.45)' : 'rgba(120,138,160,0.20)';
+    ctx.strokeStyle = dimming ? ink.edgeLit : ink.edge;
     ctx.stroke(litPath);
   }
 
@@ -184,7 +222,7 @@ export function draw(ctx: CanvasRenderingContext2D, frame: Frame): void {
   if (frame.hover !== null) {
     const i = frame.hover;
     const r = radiusIn(frame, i) + 2.5;
-    ctx.strokeStyle = '#e6edf3';
+    ctx.strokeStyle = ink.ring;
     ctx.lineWidth = 1.6 / transform.k;
     ctx.beginPath();
     ctx.arc(positions[i * 2], positions[i * 2 + 1], r, 0, Math.PI * 2);
@@ -200,7 +238,7 @@ export function draw(ctx: CanvasRenderingContext2D, frame: Frame): void {
      rows overprint themselves the moment it is zoomed out to fit. */
   const roomToLabel = !frame.labelGap || frame.labelGap * transform.k >= 46;
   if (frame.showLabels || zoomedIn || frame.hover !== null || frame.matches?.size) {
-    ctx.fillStyle = 'rgba(230,237,243,0.92)';
+    ctx.fillStyle = ink.label;
     ctx.font = `${Math.max(7, 11 / transform.k)}px -apple-system, "Segoe UI", system-ui, sans-serif`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'top';

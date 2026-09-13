@@ -1,5 +1,7 @@
 import Link from 'next/link';
 import { signOutAction } from '@/app/(auth)/actions';
+import { ThemeToggle } from './ThemeToggle';
+import { readTheme } from '@/lib/theme/store';
 import s from './topbar.module.css';
 
 /* Chrome for the signed-in pages that sit OUTSIDE /w/[ws].
@@ -18,7 +20,9 @@ interface Props {
   user?: { name: string; email: string; avatarHue: number };
 }
 
-export function PlainBar({ user }: Props) {
+export async function PlainBar({ user }: Props) {
+  const theme = await readTheme();
+
   return (
     <header className={s.bar}>
       <Link href="/" className={s.brand} aria-label="Athena — home">
@@ -26,6 +30,7 @@ export function PlainBar({ user }: Props) {
       </Link>
 
       <div className={s.right}>
+        <ThemeToggle choice={theme} />
         {user && (
           <span className={s.who} title={user.email}>
             <span

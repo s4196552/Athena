@@ -1,11 +1,11 @@
-.layout { display: flex; align-items: flex-start; min-height: calc(100vh - var(--topbar)); }
+.layout { display: flex; align-items: flex-start; min-height: calc(100dvh - var(--topbar)); }
 
 .rail {
   width: 236px; flex: 0 0 auto;
   border-right: 1px solid var(--line-soft);
   padding: 16px 14px 60px;
   position: sticky; top: var(--topbar);
-  max-height: calc(100vh - var(--topbar));
+  max-height: calc(100dvh - var(--topbar));
   overflow-y: auto;
 }
 @media (max-width: 860px) {
@@ -15,14 +15,14 @@
 
 .group { margin-bottom: 18px; }
 .groupLabel {
-  font-size: 10.5px; text-transform: uppercase; letter-spacing: .08em;
+  font-size: var(--fs-caption); text-transform: uppercase; letter-spacing: var(--ls-eyebrow);
   color: var(--faint); font-weight: 600; margin: 0 0 7px;
 }
 .chips { display: flex; flex-wrap: wrap; gap: 5px; }
 .chip {
   display: inline-flex; align-items: center; gap: 5px;
   padding: 4px 8px 4px 6px; border-radius: 999px;
-  font-size: 12px; text-decoration: none; color: var(--muted);
+  font-size: var(--fs-footnote); text-decoration: none; color: var(--muted);
   background: var(--bg-raised); border: 1px solid var(--line);
 }
 /* The icon inherits currentColor, which is the whole reason these are inline
@@ -32,7 +32,7 @@
 .chip:hover svg, .chipOn svg { opacity: 1; }
 .chip:hover { color: var(--text); border-color: var(--accent-dim); }
 .chipOn {
-  color: #06101f; font-weight: 500;
+  color: var(--on-accent); font-weight: 500;
   background: var(--ws-accent, var(--accent));
   border-color: var(--ws-accent, var(--accent));
 }
@@ -46,16 +46,16 @@
   clip-path: polygon(41% 78%, 12% 49%, 21% 40%, 41% 60%, 79% 22%, 88% 31%);
 }
 .chip:active { transform: translateY(1px); }
-.chipCount { font-size: 11px; opacity: .7; font-variant-numeric: tabular-nums; }
+.chipCount { font-size: var(--fs-caption); opacity: .7; font-variant-numeric: tabular-nums; }
 
 .main { flex: 1; min-width: 0; padding: 16px 20px 64px; }
 
 .head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; }
-.count { margin: 0; font-size: 13.5px; color: var(--muted); }
+.count { margin: 0; font-size: var(--fs-callout); color: var(--muted); }
 .spacer { flex: 1; }
 .linkBtn {
   display: inline-flex; align-items: center; gap: 5px;
-  font-size: 12.5px; text-decoration: none; color: var(--text);
+  font-size: var(--fs-subhead); text-decoration: none; color: var(--text);
   background: var(--bg-raised); border: 1px solid var(--line);
   border-radius: 7px; padding: 5px 10px;
 }
@@ -64,8 +64,8 @@
 .active { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px; }
 .activeChip {
   display: inline-flex; align-items: center; gap: 5px;
-  font-size: 12px; padding: 4px 9px 4px 7px; border-radius: 999px;
-  text-decoration: none; color: #06101f;
+  font-size: var(--fs-footnote); padding: 4px 9px 4px 7px; border-radius: 999px;
+  text-decoration: none; color: var(--on-accent);
   background: var(--ws-accent, var(--accent));
 }
 
@@ -81,28 +81,28 @@
   margin-bottom: 7px;
 }
 .ext {
-  font-size: 11px; text-transform: uppercase; letter-spacing: .07em;
+  font-size: var(--fs-caption); text-transform: uppercase; letter-spacing: var(--ls-eyebrow);
   color: #ffffffcc; font-weight: 600;
   background: #0009; border-radius: 4px; padding: 2px 7px;
 }
 .name {
-  margin: 0 0 2px; font-size: 12.5px; font-weight: 500;
+  margin: 0 0 2px; font-size: var(--fs-subhead); font-weight: 500;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 .meta {
-  margin: 0; font-size: 11.5px; color: var(--faint);
+  margin: 0; font-size: var(--fs-footnote); color: var(--faint);
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 .userTags { margin: 5px 0 0; display: flex; flex-wrap: wrap; gap: 4px; }
 /* Ringed rather than filled, so a person's tag is visibly distinct from a
    machine's -- the same distinction asset_tag.source makes in the schema. */
 .userTag {
-  font-size: 10.5px; padding: 1px 6px; border-radius: 999px;
+  font-size: var(--fs-caption); padding: 1px 6px; border-radius: 999px;
   color: var(--ws-accent, var(--accent));
   border: 1px solid currentColor;
 }
 
-.empty { color: var(--muted); font-size: 14px; }
+.empty { color: var(--muted); font-size: var(--fs-callout); }
 
 /* ---------- pages ----------
    The count used to be the whole control: "Showing the first 120 of 2,971."
@@ -113,14 +113,14 @@
   border-top: 1px solid var(--line-soft);
 }
 .pagerCount {
-  margin: 0; font-size: 12.5px; color: var(--muted);
+  margin: 0; font-size: var(--fs-subhead); color: var(--muted);
   font-variant-numeric: tabular-nums;
 }
 .pagerButtons { margin-left: auto; display: flex; gap: 8px; }
 .pagerBtn {
   display: inline-flex; align-items: center; gap: 4px;
   min-height: 32px; padding: 6px 12px;
-  font-size: 12.5px; text-decoration: none; color: var(--text);
+  font-size: var(--fs-subhead); text-decoration: none; color: var(--text);
   background: var(--bg-raised); border: 1px solid var(--line);
   border-radius: 8px;
 }

@@ -2,6 +2,8 @@ import Link from 'next/link';
 import { signOutAction } from '@/app/(auth)/actions';
 import { WorkspaceSwitcher } from './WorkspaceSwitcher';
 import { NavLinks } from './NavLinks';
+import { ThemeToggle } from './ThemeToggle';
+import { readTheme } from '@/lib/theme/store';
 import s from './topbar.module.css';
 
 interface Props {
@@ -12,8 +14,9 @@ interface Props {
   workspaces: { id: string; slug: string; name: string; accentHex: string; orgName: string }[];
 }
 
-export function TopBar({ user, workspace, orgName, role, workspaces }: Props) {
+export async function TopBar({ user, workspace, orgName, role, workspaces }: Props) {
   const base = `/w/${workspace.slug}`;
+  const theme = await readTheme();
 
   return (
     <header className={s.bar}>
@@ -28,6 +31,7 @@ export function TopBar({ user, workspace, orgName, role, workspaces }: Props) {
       <NavLinks base={base} />
 
       <div className={s.right}>
+        <ThemeToggle choice={theme} />
         <span className={s.who} title={user.email}>
           <span
             className={s.avatar}

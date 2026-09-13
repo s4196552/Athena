@@ -25,7 +25,7 @@
   min-height: 32px;
   padding: 6px 10px 6px 28px;
   font: inherit;
-  font-size: 13px;
+  font-size: var(--fs-subhead);
   color: var(--text);
   background: var(--bg-sunk);
   border: 1px solid var(--line);
@@ -40,11 +40,15 @@
 
 /* The clear affordance a type="search" gives for free in WebKit renders as a
    light glyph; this makes it legible on a dark field. */
-.input::-webkit-search-cancel-button { filter: invert(0.7); cursor: pointer; }
+.input::-webkit-search-cancel-button { cursor: pointer; }
+:root:not([data-theme='light']) .input::-webkit-search-cancel-button { filter: invert(0.7); }
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme='dark']) .input::-webkit-search-cancel-button { filter: none; }
+}
 
 .go {
   font: inherit;
-  font-size: 12.5px;
+  font-size: var(--fs-subhead);
   min-height: 32px;
   padding: 6px 12px;
   color: var(--muted);

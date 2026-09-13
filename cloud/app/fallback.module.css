@@ -29,18 +29,18 @@
 }
 
 .code {
-  font-size: 11px;
+  font-size: var(--fs-caption);
   font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: .08em;
+  letter-spacing: var(--ls-eyebrow);
   color: var(--muted);
   margin: 0 0 10px;
 }
 
 .title {
-  font-size: 28px;
-  line-height: 1.2;
-  letter-spacing: -0.018em;
+  font-size: var(--fs-title-1);
+  line-height: var(--lh-title-1);
+  letter-spacing: var(--ls-title-1);
   margin: 0 0 10px;
 }
 
@@ -52,7 +52,7 @@
 
 .slug {
   font-family: var(--font-mono);
-  font-size: 13px;
+  font-size: var(--fs-subhead);
   color: var(--text);
   background: var(--bg-sunk);
   border: 1px solid var(--line);
@@ -75,7 +75,7 @@
   padding: 9px 16px;
   border-radius: 8px;
   font: inherit;
-  font-size: 13px;
+  font-size: var(--fs-subhead);
   font-weight: 600;
   text-decoration: none;
   cursor: pointer;
@@ -83,7 +83,7 @@
 
 .btn {
   background: var(--accent);
-  color: #06101f;
+  color: var(--on-accent);
   border: 1px solid var(--accent);
 }
 .btn:hover { filter: brightness(1.08); }
@@ -107,7 +107,7 @@
   border-radius: 6px;
   background: var(--bg-raised);
   font-family: var(--font-mono);
-  font-size: 12px;
+  font-size: var(--fs-footnote);
   color: var(--muted);
   overflow-wrap: anywhere;
 }

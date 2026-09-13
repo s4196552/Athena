@@ -8,12 +8,12 @@
 .summary {
   display: flex; align-items: center; gap: 7px;
   padding: 8px 10px; cursor: pointer; list-style: none;
-  font-size: 12.5px; color: var(--text);
+  font-size: var(--fs-subhead); color: var(--text);
 }
 .summary::-webkit-details-marker { display: none; }
 .summaryLabel { font-weight: 500; }
 .summaryValue {
-  margin-left: auto; color: var(--faint); font-size: 11.5px;
+  margin-left: auto; color: var(--faint); font-size: var(--fs-footnote);
   max-width: 96px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 .chevron { color: var(--faint); transition: transform .15s ease; }
@@ -22,7 +22,7 @@
 .panel { padding: 4px 8px 9px; border-top: 1px solid var(--line-soft); }
 
 .empty, .note {
-  margin: 8px 2px; font-size: 11px; line-height: 1.5; color: var(--faint);
+  margin: 8px 2px; font-size: var(--fs-caption); line-height: 1.5; color: var(--faint);
 }
 .note { border-top: 1px solid var(--line-soft); padding-top: 7px; }
 
@@ -32,14 +32,14 @@
 
 .link {
   display: flex; align-items: center; gap: 6px; flex: 1; min-width: 0;
-  padding: 5px 6px; text-decoration: none; color: var(--muted); font-size: 12px;
+  padding: 5px 6px; text-decoration: none; color: var(--muted); font-size: var(--fs-footnote);
   border-radius: 6px;
 }
 .link:hover { color: var(--text); }
 .itemOn .link { color: var(--text); }
 .itemIcon { color: var(--ws-accent, var(--accent)); }
 .itemName { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.itemCount { color: var(--faint); font-size: 11px; font-variant-numeric: tabular-nums; }
+.itemCount { color: var(--faint); font-size: var(--fs-caption); font-variant-numeric: tabular-nums; }
 
 /* Revealed on hover or keyboard focus. Always-visible delete buttons next to
    every row turn a quiet list into a control panel. */
@@ -70,18 +70,18 @@
   flex: 1; min-width: 0;
   background: var(--bg-sunk); border: 1px solid var(--line);
   border-radius: 6px; padding: 5px 7px;
-  color: var(--text); font: inherit; font-size: 12px;
+  color: var(--text); font: inherit; font-size: var(--fs-footnote);
 }
 .input:focus { border-color: var(--ws-accent, var(--accent)); }
 
 .clear {
   display: inline-flex; align-items: center; gap: 4px;
-  font-size: 11.5px; color: var(--muted); text-decoration: none;
+  font-size: var(--fs-footnote); color: var(--muted); text-decoration: none;
   padding: 4px 2px;
 }
 .clear:hover { color: var(--text); }
 
-.error { margin: 6px 2px 0; font-size: 11.5px; color: var(--danger); line-height: 1.45; }
+.error { margin: 6px 2px 0; font-size: var(--fs-footnote); color: var(--danger); line-height: 1.45; }
 
 /* ---------- delete confirmation ----------
    An album is assembled by hand and nothing rebuilds it, so the destructive
@@ -97,15 +97,15 @@
 }
 .confirmText {
   flex: 1; min-width: 0;
-  font-size: 11.5px; color: var(--text);
+  font-size: var(--fs-footnote); color: var(--text);
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 .confirmYes, .confirmNo {
-  font: inherit; font-size: 11.5px; cursor: pointer;
+  font: inherit; font-size: var(--fs-footnote); cursor: pointer;
   padding: 3px 8px; border-radius: 5px; min-height: 24px;
   border: 1px solid transparent;
 }
-.confirmYes { color: #1a0c12; background: var(--danger); font-weight: 600; }
+.confirmYes { color: var(--on-danger); background: var(--danger); font-weight: 600; }
 .confirmYes:hover { filter: brightness(1.08); }
 .confirmNo { color: var(--muted); background: transparent; border-color: var(--line); }
 .confirmNo:hover { color: var(--text); }
