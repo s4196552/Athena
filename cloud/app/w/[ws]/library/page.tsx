@@ -253,7 +253,9 @@ export default async function LibraryPage({
           <p className={s.empty}>
             {openAlbum && page.total === 0 && openAlbum.fileIds.length === 0
               ? `“${openAlbum.name}” is empty. Open a file and tick this album to add it.`
-              : `Nothing matches. ${hasAnyFilter(query) ? 'Try removing a filter.' : ''}`}
+              : hasAnyFilter(query)
+                ? 'Nothing matches all of these filters. Remove one of the chips above to widen the selection.'
+                : 'There are no files in this workspace’s share of the catalogue yet.'}
           </p>
         ) : (
           <LibraryBrowser

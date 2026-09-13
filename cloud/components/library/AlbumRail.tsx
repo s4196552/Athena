@@ -41,6 +41,11 @@ export function AlbumRail({
   const [pending, start] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [renaming, setRenaming] = useState<string | null>(null);
+  /* Deleting an album is the one destructive action in this app that had
+     neither a confirmation nor an undo -- removing a TAG, which is reversible,
+     offers both a per-tag restore and a "Restore all". An album is a set
+     somebody assembled by hand and nothing rebuilds it, so it asks first. */
+  const [confirming, setConfirming] = useState<string | null>(null);
   const nameRef = useRef<HTMLInputElement>(null);
 
   const selected = albums.find((a) => a.active);
@@ -49,7 +54,7 @@ export function AlbumRail({
     setError(null);
     start(async () => {
       const result = await fn();
-      if (!result.ok) setError(result.error ?? 'That did not work.');
+      if (!result.ok) setError(result.error ?? 'That change was not saved. Try again.');
     });
   }
 
@@ -75,7 +80,26 @@ export function AlbumRail({
         <ul className={s.list}>
           {albums.map((album) => (
             <li key={album.id} className={album.active ? s.itemOn : s.item}>
-              {renaming === album.id ? (
+              {confirming === album.id ? (
+                <div className={s.confirm} role="group" aria-label={`Delete ${album.name}?`}>
+                  <span className={s.confirmText}>Delete “{album.name}”?</span>
+                  <button
+                    type="button"
+                    className={s.confirmYes}
+                    onClick={() => { setConfirming(null); run(() => deleteAlbum(ws, album.id)); }}
+                  >
+                    Delete
+                  </button>
+                  <button
+                    type="button"
+                    className={s.confirmNo}
+                    onClick={() => setConfirming(null)}
+                    autoFocus
+                  >
+                    Keep
+                  </button>
+                </div>
+              ) : renaming === album.id ? (
                 <form
                   className={s.renameForm}
                   action={(data) => {
@@ -120,7 +144,7 @@ export function AlbumRail({
                         type="button"
                         className={s.iconBtn}
                         title={`Delete ${album.name}`}
-                        onClick={() => run(() => deleteAlbum(ws, album.id))}
+                        onClick={() => setConfirming(album.id)}
                       >
                         <Icon name="delete" size={14} />
                       </button>

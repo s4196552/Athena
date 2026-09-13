@@ -6,6 +6,7 @@ import { zoom, zoomIdentity, type ZoomTransform } from 'd3-zoom';
 import { quadtree, type Quadtree } from 'd3-quadtree';
 import { draw, radiusOf, type Band, type Frame } from './renderer';
 import type { SimParams } from './sim.worker';
+import { usePrefersReducedMotion } from '@/lib/useMediaQuery';
 import s from './graph.module.css';
 
 export interface GraphData {
@@ -55,6 +56,8 @@ export function GraphCanvas({
   const hoverRef = useRef<number | null>(null);
   const rafRef = useRef(0);
   const sizeRef = useRef({ w: 0, h: 0, dpr: 1 });
+
+  const reducedMotion = usePrefersReducedMotion();
 
   /* The hit-test index lives in a ref, not in state, and is built from inside
      the worker's message handler rather than during render. Two reasons:
@@ -191,11 +194,16 @@ export function GraphCanvas({
         positionsRef.current = msg.positions as Float32Array;
         // Positions moved, so any existing index is stale.
         hitTreeRef.current = null;
-        schedule();
+        /* Reduced motion: the simulation still runs -- it is what decides where
+           the nodes belong -- but the intermediate frames are not drawn. The
+           reader sees the seeded layout and then the settled one, a change of
+           state rather than several seconds of drifting nodes. */
+        if (!reducedMotion) schedule();
       } else if (msg.type === 'settled') {
         // Built once, when the layout stops moving. ~0.2 ms for 1,500 inserts,
         // and it then serves every hover for free.
         indexPositions(count);
+        if (reducedMotion) schedule();
       }
     };
 
@@ -218,7 +226,7 @@ export function GraphCanvas({
     // `params` is deliberately not a dependency: moving a slider must nudge the
     // running simulation, not tear it down and restart from the seed layout.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [data, schedule, simulate, indexPositions]);
+  }, [data, schedule, simulate, indexPositions, reducedMotion]);
 
   useEffect(() => {
     if (simulate) workerRef.current?.postMessage({ type: 'params', params });

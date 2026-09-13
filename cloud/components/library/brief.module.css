@@ -34,6 +34,14 @@
 }
 .close:hover { color: var(--text); background: var(--bg-sunk); }
 
+/* Hit area, not drawn size. The HIG asks for 44x44pt by default and 28x28 as
+   an absolute minimum; this control is drawn at 20px because it lives inside a
+   dense row, so the target is grown with a pseudo-element that costs no
+   layout. Coarse pointers get the full 44. */
+.close { position: relative; }
+.close::after { content: ''; position: absolute; inset: -5px; }
+@media (pointer: coarse) { .close::after { inset: -12px; } }
+
 .waiting { color: var(--muted); font-size: 13px; }
 
 /* The model's paragraph is visually separated from the counts below it, so it

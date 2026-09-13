@@ -1,0 +1,79 @@
+/* Loading skeletons.
+ *
+ * Every page in this app is force-dynamic, so clicking a facet chip is a server
+ * round-trip over a 6,120-file catalogue with -- until now -- no feedback of
+ * any kind. Next renders these while the segment is being built.
+ *
+ * They mirror the LAYOUT of the page they stand in for rather than being a
+ * generic spinner, so the content lands where the grey blocks already were and
+ * nothing jumps. The shimmer is the only decorative animation in the app; the
+ * global prefers-reduced-motion rule freezes it to a flat block, which is the
+ * correct outcome rather than a degraded one.
+ */
+
+.bar {
+  background: var(--bg-raised);
+  border-radius: 6px;
+  position: relative;
+  overflow: hidden;
+}
+
+.bar::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(90deg, transparent, #ffffff0d, transparent);
+  animation: sweep 1.4s ease-in-out infinite;
+}
+
+@keyframes sweep {
+  100% { transform: translateX(100%); }
+}
+
+/* ---------- library ---------- */
+.layout { display: flex; align-items: flex-start; min-height: calc(100dvh - var(--topbar)); }
+
+.rail {
+  width: 236px; flex: 0 0 auto;
+  border-right: 1px solid var(--line-soft);
+  padding: 16px 14px 60px;
+}
+.railGroup { margin-bottom: 18px; }
+.railLabel { height: 9px; width: 60px; margin-bottom: 9px; }
+.chips { display: flex; flex-wrap: wrap; gap: 5px; }
+.chip { height: 24px; border-radius: 999px; }
+
+.main { flex: 1; min-width: 0; padding: 16px 20px 64px; }
+.head { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; }
+.count { height: 14px; width: 120px; }
+.spacer { flex: 1; }
+.button { height: 30px; width: 104px; border-radius: 7px; }
+
+.grid {
+  display: grid; gap: 12px;
+  grid-template-columns: repeat(auto-fill, minmax(158px, 1fr));
+}
+.tile { aspect-ratio: 4 / 3; border-radius: 8px; }
+.caption { height: 10px; width: 70%; margin-top: 7px; }
+
+/* ---------- workspace overview ---------- */
+.wrap { max-width: 1040px; margin: 0 auto; padding: 26px 20px 64px; }
+.title { height: 24px; width: 220px; margin-bottom: 10px; }
+.sub { height: 12px; width: 300px; margin-bottom: 26px; }
+.stats { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); }
+.stat { height: 86px; border-radius: 10px; }
+.section { margin-top: 30px; }
+.panel { height: 150px; border-radius: 10px; }
+
+/* ---------- graph ---------- */
+.canvas {
+  height: calc(100dvh - var(--topbar) - 96px);
+  margin: 16px 20px;
+  border-radius: 12px;
+}
+
+@media (max-width: 860px) {
+  .layout { flex-direction: column; }
+  .rail { width: 100%; border-right: 0; border-bottom: 1px solid var(--line-soft); }
+}

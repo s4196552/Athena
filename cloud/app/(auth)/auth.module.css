@@ -41,7 +41,12 @@
   border: 1px solid var(--line);
   border-radius: 8px;
 }
-.input:focus { border-color: var(--accent); outline: none; box-shadow: 0 0 0 3px #4c9aff22; }
+/* The border tint stays as an affordance, but it is no longer the ONLY sign
+   of focus: `outline: none` on :focus also suppresses :focus-visible, which is
+   a subset of it, so this previously removed the app's one global ring and
+   replaced it with a 13%-alpha glow. */
+.input:focus { border-color: var(--accent); }
+.input:focus-visible { box-shadow: 0 0 0 3px #4c9aff33; }
 
 .submit {
   margin-top: 4px;

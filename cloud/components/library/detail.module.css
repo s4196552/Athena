@@ -27,6 +27,14 @@
 }
 .close:hover { color: var(--text); background: var(--bg-sunk); }
 
+/* Hit area, not drawn size. The HIG asks for 44x44pt by default and 28x28 as
+   an absolute minimum; this control is drawn at 20px because it lives inside a
+   dense row, so the target is grown with a pseudo-element that costs no
+   layout. Coarse pointers get the full 44. */
+.close { position: relative; }
+.close::after { content: ''; position: absolute; inset: -5px; }
+@media (pointer: coarse) { .close::after { inset: -12px; } }
+
 .facts { margin: 0 0 18px; display: grid; gap: 0; }
 .facts > div {
   display: flex; gap: 10px; justify-content: space-between;
@@ -56,6 +64,14 @@
 }
 .textBtn:hover { color: var(--text); background: var(--bg-sunk); }
 
+/* Hit area, not drawn size. The HIG asks for 44x44pt by default and 28x28 as
+   an absolute minimum; this control is drawn at 22px because it lives inside a
+   dense row, so the target is grown with a pseudo-element that costs no
+   layout. Coarse pointers get the full 44. */
+.textBtn { position: relative; }
+.textBtn::after { content: ''; position: absolute; inset: -4px -2px; }
+@media (pointer: coarse) { .textBtn::after { inset: -11px -2px; } }
+
 .tags { display: flex; flex-wrap: wrap; gap: 5px; }
 .tag, .tagUser, .tagOff {
   display: inline-flex; align-items: center; gap: 5px;
@@ -76,6 +92,14 @@
 .tagX:hover { opacity: 1; background: var(--danger); color: #0d1117; }
 .tagOff .tagX:hover { background: var(--ok); }
 .tagX:disabled { opacity: .25; cursor: default; }
+
+/* Hit area, not drawn size. The HIG asks for 44x44pt by default and 28x28 as
+   an absolute minimum; this control is drawn at 18px because it lives inside a
+   dense row, so the target is grown with a pseudo-element that costs no
+   layout. Coarse pointers get the full 44. */
+.tagX { position: relative; }
+.tagX::after { content: ''; position: absolute; inset: -6px; }
+@media (pointer: coarse) { .tagX::after { inset: -13px; } }
 
 .removedLabel {
   display: flex; align-items: center; gap: 5px;

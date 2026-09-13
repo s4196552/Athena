@@ -67,7 +67,7 @@ export function FileDetail({
     start(async () => {
       const result = await fn();
       if (result.ok) commit?.();
-      else setError(result.error ?? 'That did not work.');
+      else setError(result.error ?? 'That change was not saved. Try again.');
     });
   }
 
@@ -140,7 +140,11 @@ export function FileDetail({
               )}
             </span>
           ))}
-          {file.tags.length === 0 && <span className={s.none}>No tags on this file.</span>}
+          {file.tags.length === 0 && (
+            <span className={s.none}>
+              No tags on this file. Nothing in it matched the classifier.
+            </span>
+          )}
         </div>
 
         {file.removed.length > 0 && (

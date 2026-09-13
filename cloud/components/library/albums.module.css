@@ -56,6 +56,14 @@
 .iconBtn:hover { color: var(--text); background: var(--bg-sunk); }
 .iconBtn:disabled { opacity: .4; cursor: default; }
 
+/* Hit area, not drawn size. The HIG asks for 44x44pt by default and 28x28 as
+   an absolute minimum; this control is drawn at 20px because it lives inside a
+   dense row, so the target is grown with a pseudo-element that costs no
+   layout. Coarse pointers get the full 44. */
+.iconBtn { position: relative; }
+.iconBtn::after { content: ''; position: absolute; inset: -5px; }
+@media (pointer: coarse) { .iconBtn::after { inset: -12px; } }
+
 .newForm, .renameForm { display: flex; gap: 4px; align-items: center; width: 100%; }
 .renameForm { padding: 2px 4px; }
 .input {
@@ -64,7 +72,7 @@
   border-radius: 6px; padding: 5px 7px;
   color: var(--text); font: inherit; font-size: 12px;
 }
-.input:focus { border-color: var(--ws-accent, var(--accent)); outline: none; }
+.input:focus { border-color: var(--ws-accent, var(--accent)); }
 
 .clear {
   display: inline-flex; align-items: center; gap: 4px;
@@ -74,3 +82,31 @@
 .clear:hover { color: var(--text); }
 
 .error { margin: 6px 2px 0; font-size: 11.5px; color: var(--danger); line-height: 1.45; }
+
+/* ---------- delete confirmation ----------
+   An album is assembled by hand and nothing rebuilds it, so the destructive
+   step asks first. Inline rather than a window.confirm(): it keeps the answer
+   next to the thing being answered about, and it can be styled and read by a
+   screen reader as a group. */
+.confirm {
+  display: flex; align-items: center; gap: 6px;
+  width: 100%; padding: 4px 6px;
+  background: var(--bg-sunk);
+  border: 1px solid var(--danger);
+  border-radius: 7px;
+}
+.confirmText {
+  flex: 1; min-width: 0;
+  font-size: 11.5px; color: var(--text);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.confirmYes, .confirmNo {
+  font: inherit; font-size: 11.5px; cursor: pointer;
+  padding: 3px 8px; border-radius: 5px; min-height: 24px;
+  border: 1px solid transparent;
+}
+.confirmYes { color: #1a0c12; background: var(--danger); font-weight: 600; }
+.confirmYes:hover { filter: brightness(1.08); }
+.confirmNo { color: var(--muted); background: transparent; border-color: var(--line); }
+.confirmNo:hover { color: var(--text); }
+.confirmYes:active, .confirmNo:active { transform: translateY(1px); }

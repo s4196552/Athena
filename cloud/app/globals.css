@@ -40,6 +40,12 @@
 
 * { box-sizing: border-box; }
 
+/* Without this, the browser assumes a light page and draws the things CSS does
+   not reach -- scrollbars, <input type=range> thumbs, checkboxes, the search
+   field's clear button, form autofill -- in their light variants, on a
+   near-black background. Declaring it is the whole fix. */
+html { color-scheme: dark; }
+
 html, body {
   margin: 0;
   padding: 0;
@@ -76,6 +82,13 @@ code, pre { font-family: var(--font-mono); }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }
+
+/* NOTE: the rule above cannot reach the graph. Its layout is a d3-force
+   simulation drawn to a <canvas> in a requestAnimationFrame loop, which is
+   JavaScript rather than CSS -- see GraphCanvas.tsx, which asks the same
+   media query itself and settles the simulation instead of animating it. */
