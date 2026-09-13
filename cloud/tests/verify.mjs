@@ -706,6 +706,57 @@ section('reading a brief aloud');
 }
 
 
+// ===========================================================================
+section('the agent: ask, explain, relate');
+// ===========================================================================
+{
+  const page = await get('/w/hadesmedia-ops/agent', iris);
+
+  check('the agent page offers to turn a question into a view',
+    page.body.includes('Ask for a view'));
+  check('and says plainly that it does not produce the number',
+    page.body.includes('the catalogue does the counting'));
+
+  /* The repeats section is computed on every render and costs nothing, so it
+     is either there or the finder is broken. The seed has 50 groups in the
+     main library; Studio Ops sees a scoped slice of it. */
+  const hasRepeats = page.body.includes('The same name, filed in several places');
+  check('the agent page reports names filed in several places', hasRepeats);
+  if (hasRepeats) {
+    check('and says they are not duplicates', page.body.includes('different content hash'),
+      'every assetId in the seed is distinct, so claiming duplication would be false');
+  }
+
+  /* THE FILTER ROUND TRIP. planView returns tag names in the catalogue's own
+     casing -- "SolarVanguard", not "solarvanguard" -- and that string goes
+     into a URL, back through parseFilterParams, and into the repository. If
+     any step lowercased it the view would come back empty while looking like
+     a considered answer, which is the exact failure the validator exists to
+     prevent. Asserted end to end rather than trusted. */
+  const entity = await get('/w/hadesmedia-ops/library?entity=SolarVanguard', iris);
+  const count = entity.body.match(/([\d,]+)\s+items?/);
+  check('a mixed-case tag name survives the URL round trip',
+    entity.status === 200 && !!count && Number(count[1].replace(/,/g, '')) > 0,
+    count ? `${count[1]} items` : 'no count line found');
+
+  /* And the mode a plan picks has to survive the link, or a question about
+     overlap would open the file graph and quietly answer something else. */
+  const graph = await get('/w/hadesmedia-ops/graph?topic=finance&mode=tags', iris);
+  check('the graph accepts a mode from the URL', graph.status === 200);
+  const api = await json('/api/w/hadesmedia-ops/graph?mode=tags&topic=finance', iris);
+  check('and the tag graph it asks for has nodes',
+    api.status === 200 && (api.data?.nodes?.length ?? 0) > 0,
+    `${api.data?.nodes?.length ?? 0} nodes`);
+
+  /* Every verb that spends a model call must refuse a non-member BEFORE it
+     spends anything. Server actions are not reachable by a plain fetch, so
+     this asserts the page they live on is gated, which is the same boundary. */
+  const outsider = await get('/w/hadesmedia-ops/agent', priya);
+  check('a non-member cannot reach the agent at all', outsider.status === 404,
+    `status ${outsider.status}`);
+}
+
+
 console.log(
   `\n${failures === 0 ? `all ${checks} checks passed` : `${failures} of ${checks} FAILED`}\n`,
 );

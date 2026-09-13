@@ -90,7 +90,18 @@ export function GraphClient({ ws, fileRules, tagRules }: Props) {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  const [mode, setMode] = useState<Mode>('files');
+  /* Seeded from the URL so a link can choose the drawing, not just the filter.
+     The agent's "ask for a view" produces exactly that -- a question about how
+     two topics overlap is answered by the TAG graph, and arriving at the file
+     graph instead would silently be the wrong answer to it.
+
+     Only the initial value: useState ignores later changes, which is what
+     keeps the mode toggle working afterwards rather than being snapped back to
+     the URL on every filter change. */
+  const [mode, setMode] = useState<Mode>(() => {
+    const asked = searchParams.get('mode');
+    return asked === 'tags' || asked === 'pyramid' ? asked : 'files';
+  });
   /* Result carries the request it answers. Deriving `loading` from whether the
      stored key still matches the current one avoids setting state synchronously
      at the top of the fetch effect, which React 19 flags because it triggers a

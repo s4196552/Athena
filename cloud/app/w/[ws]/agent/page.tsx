@@ -4,10 +4,13 @@ import { requireSession } from '@/lib/auth';
 import { workspaceContext } from '@/lib/data/context';
 import { getRepository } from '@/lib/data';
 import { buildQueue } from '@/lib/agent/queue';
+import { findRepeats } from '@/lib/agent/related';
 import { geminiStatus } from '@/lib/ai/gemini';
 import { PER_VIEWER_DAILY } from '@/lib/brief/budget';
-import { formatNumber } from '@/lib/format';
+import { formatBytes, formatNumber } from '@/lib/format';
+import { Icon } from '@/lib/icons';
 import { AgentClient } from './AgentClient';
+import { AskBox } from './AskBox';
 import s from './agent.module.css';
 
 export const dynamic = 'force-dynamic';
@@ -83,6 +86,14 @@ export default async function AgentPage({
   const model = geminiStatus();
   const accepted = ctx.overlay.additions.length;
 
+  /* Costs nothing, so it is computed for every visit rather than put behind a
+     button. Worth stating why it is not called "duplicates": every file in
+     this catalogue has a distinct content hash, so there are none, and a
+     duplicate finder here would render an empty box forever while implying the
+     library was tidy. What these groups show is one name filed in several
+     places, which is a different and more common problem. */
+  const repeats = findRepeats(page.files, 8);
+
   return (
     <main className={s.page} id="main">
       <header className={s.head}>
@@ -123,6 +134,8 @@ export default async function AgentPage({
         </div>
       </div>
 
+      <AskBox ws={ws} ready={model.configured} />
+
       <section className={s.note}>
         <p>
           <strong>What the agent is given.</strong> It cannot see the file. The
@@ -140,6 +153,8 @@ export default async function AgentPage({
         </p>
       </section>
 
+      <h2 className={s.h2}>Files missing a label</h2>
+
       {queue.length === 0 ? (
         <p className={s.empty}>
           Every file this workspace can see has both a kind and a topic. There is
@@ -153,6 +168,62 @@ export default async function AgentPage({
           modelReady={model.configured}
           total={gaps}
         />
+      )}
+
+      {repeats.length > 0 && (
+        <section className={s.repeats}>
+          <h2 className={s.h2}>The same name, filed in several places</h2>
+          <p className={s.queueHead}>
+            Found by comparing names, not contents — version and copy markers are
+            stripped, so <code>report_v2</code> and <code>report_final</code> count as
+            one name. Every file below has a{' '}
+            <strong>different content hash</strong>, so these are not duplicates:
+            they are separate documents sharing a name across folders, which is the
+            harder problem to notice.
+          </p>
+
+          <ul className={s.list}>
+            {repeats.map((group) => (
+              <li key={`${group.stem}.${group.ext}`} className={s.item}>
+                <div className={s.itemHead}>
+                  <Icon name="folder" size={16} className={s.fileIcon} />
+                  <div className={s.names}>
+                    <p className={s.name}>
+                      {group.stem}
+                      {group.ext ? `.${group.ext}` : ''}
+                    </p>
+                    <p className={s.path}>
+                      {group.files.length} files across {group.folders} folders ·{' '}
+                      {group.distinctContent === group.files.length
+                        ? 'all different content'
+                        : `${group.distinctContent} distinct contents`}
+                    </p>
+                  </div>
+                  <Link
+                    href={`/w/${ws}/library?q=${encodeURIComponent(group.stem)}`}
+                    className={s.ask}
+                  >
+                    <Icon name="search" size={14} /> Show them
+                  </Link>
+                </div>
+
+                <ul className={s.where}>
+                  {group.files.slice(0, 5).map((f) => (
+                    <li key={f.fileId}>
+                      <span className={s.wherePath}>{f.parentRel || 'the library root'}</span>
+                      <span className={s.whereMeta}>{formatBytes(f.sizeBytes)}</span>
+                    </li>
+                  ))}
+                  {group.files.length > 5 && (
+                    <li className={s.whereMore}>
+                      and {group.files.length - 5} more
+                    </li>
+                  )}
+                </ul>
+              </li>
+            ))}
+          </ul>
+        </section>
       )}
     </main>
   );

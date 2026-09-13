@@ -12,6 +12,7 @@ import { LibraryBrowser, type FileView, type TagView } from '@/components/librar
 import { AlbumRail, type AlbumView } from '@/components/library/AlbumRail';
 import { BriefPanel } from '@/components/library/BriefPanel';
 import { elevenLabsStatus } from '@/lib/ai/elevenlabs';
+import { geminiStatus } from '@/lib/ai/gemini';
 import { SearchBox } from '@/components/library/SearchBox';
 import s from './library.module.css';
 
@@ -271,6 +272,7 @@ export default async function LibraryPage({
               id: a.id, name: a.name, fileIds: a.fileIds,
             }))}
             canEdit={ctx.can('tag')}
+            modelReady={geminiStatus().configured}
           />
         )}
 

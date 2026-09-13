@@ -8,6 +8,10 @@ import { writeOverlay } from '@/lib/overlay/store';
 import { MAX_ADDITIONS } from '@/lib/overlay/types';
 import { checkBudget, spend } from '@/lib/brief/budget';
 import { classify, type Proposal } from '@/lib/agent/classify';
+import { explain, type Explanation } from '@/lib/agent/explain';
+import { planView, type ViewPlan, type Vocabulary } from '@/lib/agent/view';
+import { findRelated, type Relation } from '@/lib/agent/related';
+import { toSearchParams } from '@/lib/filter/params';
 import { buildQueue, type Candidate } from '@/lib/agent/queue';
 import { GeminiError, geminiStatus } from '@/lib/ai/gemini';
 import type { Overlay } from '@/lib/overlay/types';
@@ -177,4 +181,220 @@ export async function acceptTag(
   return { ok: true };
 }
 
+/* ---------------------------------------------------------------------------
+ *  The agent's other verbs.
+ *
+ *  Label (above) picks a tag from a fixed vocabulary. These three do different
+ *  jobs, and they are kept apart for the same reason propose and accept are:
+ *  they differ in what they COST and in what they CHANGE. `relatedFiles` costs
+ *  nothing and changes nothing. `explainFile` and `askForView` each spend one
+ *  model call and change nothing. Accepting is still the only verb in this
+ *  file that writes anything.
+ * ------------------------------------------------------------------------- */
+
+/** The tag lens every page reads through, in one place: this workspace's own
+ *  tags included, another workspace's excluded, its corrections applied. */
+function lensOf(ctx: NonNullable<Awaited<ReturnType<typeof workspaceContext>>>) {
+  return (f: {
+    id: FileId;
+    tags: TagId[];
+    userTags?: { workspaceId: string; tagId: TagId }[];
+  }): TagId[] => {
+    const own = (f.userTags ?? [])
+      .filter((u) => u.workspaceId === ctx.workspace.id)
+      .map((u) => u.tagId);
+    const added = [...(ctx.addedTags?.(f.id) ?? [])];
+    return [...f.tags, ...own, ...added].filter((id) => !ctx.isRemoved(f.id, id));
+  };
+}
+
+export type RelatedResult =
+  | { ok: true; related: Relation[]; scanned: number }
+  | { ok: false; error: string };
+
+/** "What else is like this?" -- cosine similarity over idf-weighted tag
+ *  vectors. No model, no budget and no limit on how often it may be asked,
+ *  because it is arithmetic over an index that is already in memory. */
+export async function relatedFiles(ws: string, rawFileId: string): Promise<RelatedResult> {
+  const session = await requireSession(`/w/${ws}/library`);
+  const ctx = await workspaceContext(session.user.id, ws);
+  if (!ctx) return { ok: false, error: GONE };
+
+  const repo = getRepository();
+  const file = await repo.getFile(ctx, rawFileId as FileId);
+  if (!file) return { ok: false, error: NO_FILE };
+
+  const [page, tags] = await Promise.all([
+    repo.listFiles(ctx, { limit: Number.MAX_SAFE_INTEGER }),
+    repo.listTags(ctx),
+  ]);
+
+  const related = findRelated(
+    file,
+    page.files,
+    lensOf(ctx),
+    new Map(tags.map((t) => [t.id, t])),
+    8,
+  );
+
+  return { ok: true, related, scanned: page.files.length };
+}
+
+export type ExplainResult =
+  | { ok: true; explanation: Explanation; related: Relation[] }
+  | { ok: false; error: string };
+
+/** "What is this?" -- one model call, given the file's metadata, its folder
+ *  neighbours and the files the catalogue says are most like it. */
+export async function explainFile(ws: string, rawFileId: string): Promise<ExplainResult> {
+  const session = await requireSession(`/w/${ws}/library`);
+  const ctx = await workspaceContext(session.user.id, ws);
+  if (!ctx) return { ok: false, error: GONE };
+
+  const status = geminiStatus();
+  if (!status.configured) {
+    return {
+      ok: false,
+      error: 'No model is configured on this server, so files can be listed and '
+        + 'filtered but not described.',
+    };
+  }
+
+  const repo = getRepository();
+  const file = await repo.getFile(ctx, rawFileId as FileId);
+  if (!file) return { ok: false, error: NO_FILE };
+
+  const budget = await checkBudget();
+  if (!budget.allowed) {
+    return {
+      ok: false,
+      error: budget.reason
+        ?? `That is ${budget.viewerLimit} model calls today, which is this demo's limit.`,
+    };
+  }
+
+  const [page, tags] = await Promise.all([
+    repo.listFiles(ctx, { limit: Number.MAX_SAFE_INTEGER }),
+    repo.listTags(ctx),
+  ]);
+  const tagById = new Map(tags.map((t) => [t.id, t]));
+  const lens = lensOf(ctx);
+
+  const related = findRelated(file, page.files, lens, tagById, 8);
+
+  /* Folder neighbours, capped. A folder of 400 files would otherwise put 400
+     names in the prompt, and the first eight say as much about what the folder
+     is for as all of them would. */
+  const siblings = page.files
+    .filter((f) => f.id !== file.id && (f.parentRel ?? '') === (file.parentRel ?? ''))
+    .slice(0, 8)
+    .map((f) => f.name);
+
+  try {
+    const explanation = await explain({
+      name: file.name,
+      parentRel: file.parentRel ?? '',
+      ext: file.ext,
+      mediaType: file.mediaType,
+      sizeBytes: file.sizeBytes,
+      mtime: file.mtime,
+      tags: lens(file)
+        .map((id) => tagById.get(id)?.displayName)
+        .filter((n): n is string => Boolean(n)),
+      siblings,
+      related,
+    });
+    await spend();
+    return { ok: true, explanation, related };
+  } catch (err) {
+    const detail = err instanceof GeminiError ? err.message : 'The model could not be reached.';
+    return { ok: false, error: detail };
+  }
+}
+
+export type AskResult =
+  | { ok: true; plan: ViewPlan; matches: number; href: string; libraryHref: string }
+  | { ok: false; error: string };
+
+const MAX_QUESTION = 300;
+
+/** "Show me how finance and legal overlap" -- one model call that chooses a
+ *  filter and a drawing, after which the CATALOGUE says how many files that
+ *  is. The model is never asked for the number and never supplies one. */
+export async function askForView(ws: string, rawQuestion: string): Promise<AskResult> {
+  const session = await requireSession(`/w/${ws}/agent`);
+  const ctx = await workspaceContext(session.user.id, ws);
+  if (!ctx) return { ok: false, error: GONE };
+
+  const question = rawQuestion.trim().slice(0, MAX_QUESTION);
+  if (!question) {
+    return {
+      ok: false,
+      error: 'Type a question first — "what did Aria Chen work on in 2024" is the shape.',
+    };
+  }
+
+  const status = geminiStatus();
+  if (!status.configured) {
+    return {
+      ok: false,
+      error: 'No model is configured on this server, so questions cannot be turned '
+        + 'into views. The facet rail in the library does the same job by hand.',
+    };
+  }
+
+  const budget = await checkBudget();
+  if (!budget.allowed) {
+    return {
+      ok: false,
+      error: budget.reason
+        ?? `That is ${budget.viewerLimit} model calls today, which is this demo's limit.`,
+    };
+  }
+
+  const repo = getRepository();
+  const tags = await repo.listTags(ctx);
+
+  /* The vocabulary offered is THIS workspace's, so a question can never be
+     answered with a tag the asker has no grant to see. Ordered by how many
+     files carry each, because the prompt keeps only the head of each axis. */
+  const vocab: Vocabulary = {};
+  for (const tag of tags) {
+    const list = vocab[tag.kind] ?? (vocab[tag.kind] = []);
+    list.push({ name: tag.name, display: tag.displayName, count: tag.fileCount });
+  }
+  for (const list of Object.values(vocab)) list.sort((a, b) => b.count - a.count);
+
+  try {
+    const plan = await planView(question, vocab);
+    await spend();
+
+    /* THE COUNT IS ARITHMETIC. The plan runs through the same repository the
+       facet rail uses, so the number shown is the number the library itself
+       would show -- not something the model reported. */
+    const tagFilter = Object.keys(plan.tags).length ? plan.tags : undefined;
+    const page = await repo.listFiles(ctx, {
+      tags: tagFilter,
+      q: plan.q,
+      limit: Number.MAX_SAFE_INTEGER,
+    });
+
+    const sp = toSearchParams({ tags: tagFilter, q: plan.q });
+    const libraryHref = `/w/${ws}/library${sp.toString() ? `?${sp}` : ''}`;
+    sp.set('mode', plan.mode);
+
+    return {
+      ok: true,
+      plan,
+      matches: page.files.length,
+      href: `/w/${ws}/graph?${sp}`,
+      libraryHref,
+    };
+  } catch (err) {
+    const detail = err instanceof GeminiError ? err.message : 'The model could not be reached.';
+    return { ok: false, error: detail };
+  }
+}
+
 export type { Candidate };
+export type { Relation } from '@/lib/agent/related';

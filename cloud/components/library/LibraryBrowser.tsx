@@ -57,12 +57,17 @@ export function LibraryBrowser({
   ws,
   albums,
   canEdit,
+  modelReady,
 }: {
   files: FileView[];
   accent: string;
   ws: string;
   albums: AlbumMembership[];
   canEdit: boolean;
+  /** Whether this server has a model key. Passed down so the panel's "ask the
+   *  agent" control is absent when it could not work, rather than present and
+   *  failing on the first press. */
+  modelReady: boolean;
 }) {
   const [mode, setMode] = useLocalSetting<ViewMode>('athena:view', 'auto');
   const [size, setSize] = useLocalSetting<number>('athena:tile', 2);
@@ -263,6 +268,7 @@ export function LibraryBrowser({
           file={open}
           albums={albums}
           canEdit={canEdit}
+          modelReady={modelReady}
           onClose={() => setOpen(null)}
         />
       )}

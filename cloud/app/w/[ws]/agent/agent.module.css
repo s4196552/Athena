@@ -265,3 +265,186 @@
   .status { margin-left: 0; white-space: normal; }
   .ask { width: 100%; justify-content: center; }
 }
+
+/* ---------- section headings ----------
+   The page grew from one list into four things the agent can do, so the
+   sections need names. One size for all of them, per the type scale. */
+.h2 {
+  font-size: var(--fs-title-3);
+  line-height: var(--lh-title-3);
+  letter-spacing: var(--ls-title-3);
+  font-weight: 600;
+  margin: var(--space-6) 0 var(--space-2);
+}
+.h2:first-child { margin-top: 0; }
+
+/* ---------- ask for a view ----------
+   .askPanel, not .ask: the queue row's "Ask the agent" button already owns
+   .ask, and a second rule of the same name would have silently restyled every
+   one of them into a card. */
+.askPanel {
+  background: var(--bg-raised);
+  border: 1px solid var(--separator);
+  border-radius: var(--r-md);
+  padding: var(--space-4);
+  margin-bottom: var(--space-5);
+}
+.askSub {
+  margin: 0 0 var(--space-3);
+  font-size: var(--fs-subhead);
+  line-height: 1.6;
+  color: var(--label-2);
+  max-width: var(--measure);
+}
+
+.askForm { display: flex; gap: var(--space-2); flex-wrap: wrap; }
+.askInput {
+  flex: 1 1 260px;
+  min-height: var(--control-md);
+  font: inherit; font-size: var(--fs-body);
+  color: var(--label); background: var(--bg-base);
+  border: 1px solid var(--separator); border-radius: var(--r-sm);
+  padding: var(--space-1) var(--space-3);
+}
+.askInput::placeholder { color: var(--label-3); }
+.askInput:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.askInput:disabled { opacity: .6; }
+
+.askGo {
+  display: inline-flex; align-items: center; gap: var(--space-1);
+  min-height: var(--control-md);
+  font: inherit; font-size: var(--fs-subhead); font-weight: 600;
+  color: var(--on-accent); background: var(--accent);
+  border: 0; border-radius: var(--r-sm);
+  padding: var(--space-1) var(--space-4);
+  cursor: pointer; white-space: nowrap;
+}
+.askGo:hover:not(:disabled) { filter: brightness(1.08); }
+.askGo:active:not(:disabled) { transform: translateY(1px); }
+.askGo:disabled { opacity: .5; cursor: default; }
+
+.askNote, .examples {
+  margin: var(--space-3) 0 0;
+  font-size: var(--fs-footnote);
+  line-height: 1.6;
+  color: var(--label-2);
+}
+/* A button, not a link: it runs a question rather than navigating. Underlined
+   so it reads as pressable without relying on colour alone. */
+.example {
+  font: inherit; font-size: inherit;
+  color: var(--accent); background: none; border: 0;
+  padding: 0; cursor: pointer;
+  text-decoration: underline; text-underline-offset: 2px;
+}
+.example:hover { filter: brightness(1.15); }
+
+/* ---------- the plan it came back with ---------- */
+.plan {
+  margin-top: var(--space-4);
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--separator-soft);
+}
+.planHead {
+  display: flex; align-items: baseline; gap: var(--space-3);
+  flex-wrap: wrap; margin-bottom: var(--space-3);
+}
+.planTitle {
+  margin: 0;
+  font-size: var(--fs-headline);
+  line-height: var(--lh-headline);
+  font-weight: 600;
+}
+.planMode {
+  display: inline-flex; align-items: center; gap: var(--space-1);
+  font-size: var(--fs-caption);
+  color: var(--label-2);
+  border: 1px solid var(--separator);
+  border-radius: var(--r-pill);
+  padding: 2px var(--space-2);
+}
+
+.planChips { display: flex; gap: var(--space-1); flex-wrap: wrap; }
+.planChip {
+  display: inline-flex; align-items: center; gap: var(--space-1);
+  font-size: var(--fs-footnote);
+  color: var(--label);
+  background: var(--fill-selected);
+  border-radius: var(--r-pill);
+  padding: 2px var(--space-3) 2px var(--space-2);
+}
+/* The axis is named on every chip. "finance" alone is ambiguous -- it is a
+   topic here and could have been a keyword -- and the filter it produced is
+   only checkable if the axis is visible. */
+.planAxis {
+  font-size: var(--fs-caption);
+  text-transform: uppercase;
+  letter-spacing: var(--ls-eyebrow);
+  color: var(--label-2);
+  font-weight: 600;
+}
+
+.planCount {
+  margin: var(--space-3) 0 0;
+  font-size: var(--fs-subhead);
+  color: var(--label-2);
+}
+.planCount strong {
+  color: var(--label); font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.planWhy {
+  margin: var(--space-2) 0 0;
+  font-size: var(--fs-footnote);
+  line-height: 1.6;
+  color: var(--label-2);
+  max-width: var(--measure);
+}
+
+.dropped {
+  display: flex; align-items: flex-start; gap: var(--space-1);
+  margin: var(--space-3) 0 0;
+  font-size: var(--fs-footnote);
+  line-height: 1.55;
+  color: var(--warn);
+  background: color-mix(in srgb, var(--warn) 10%, transparent);
+  border: 1px solid color-mix(in srgb, var(--warn) 30%, transparent);
+  border-radius: var(--r-sm);
+  padding: var(--space-2) var(--space-3);
+  max-width: var(--measure);
+}
+
+.planGo { display: flex; gap: var(--space-2); flex-wrap: wrap; margin-top: var(--space-4); }
+.planPrimary, .planSecondary {
+  display: inline-flex; align-items: center; gap: var(--space-1);
+  min-height: var(--control-md);
+  font-size: var(--fs-subhead); font-weight: 500;
+  border-radius: var(--r-sm);
+  padding: var(--space-1) var(--space-4);
+  text-decoration: none;
+}
+.planPrimary { color: var(--on-accent); background: var(--accent); }
+.planPrimary:hover { filter: brightness(1.08); }
+.planSecondary {
+  color: var(--label); background: var(--bg-elevated);
+  border: 1px solid var(--separator);
+}
+.planSecondary:hover { border-color: var(--accent); color: var(--accent); }
+
+/* ---------- the same name in several places ---------- */
+.repeats { margin-top: var(--space-6); }
+.where {
+  list-style: none;
+  margin: var(--space-2) 0 0;
+  padding: 0 0 0 var(--space-6);
+  display: flex; flex-direction: column; gap: 2px;
+}
+.where li {
+  display: flex; justify-content: space-between; gap: var(--space-3);
+  font-size: var(--fs-caption);
+  color: var(--label-2);
+}
+.wherePath { font-family: var(--font-mono); overflow-wrap: anywhere; }
+.whereMeta { color: var(--label-3); font-variant-numeric: tabular-nums; flex: 0 0 auto; }
+.whereMore { color: var(--label-3); }

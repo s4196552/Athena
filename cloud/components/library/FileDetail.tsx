@@ -4,6 +4,7 @@ import { useState, useTransition } from 'react';
 import { Icon, TagIcon, iconForMedia } from '@/lib/icons';
 import { formatBytes, formatDate } from '@/lib/format';
 import { removeTag, restoreAllTags, restoreTag, toggleInAlbum } from '@/app/w/[ws]/actions';
+import { FileInsight } from './FileInsight';
 import type { FileView, TagView } from './LibraryBrowser';
 import s from './detail.module.css';
 
@@ -38,12 +39,14 @@ export function FileDetail({
   file: initial,
   albums,
   canEdit,
+  modelReady,
   onClose,
 }: {
   ws: string;
   file: FileView;
   albums: AlbumMembership[];
   canEdit: boolean;
+  modelReady: boolean;
   onClose: () => void;
 }) {
   const [pending, start] = useTransition();
@@ -180,6 +183,11 @@ export function FileDetail({
           </>
         )}
       </section>
+
+      {/* Below the tags, because the tags are the evidence both halves of it
+          reason from, and above albums, because filing the file somewhere is
+          the thing you do AFTER working out what it is. */}
+      <FileInsight ws={ws} fileId={file.id} canExplain={modelReady} />
 
       {canEdit && (
         <section className={s.section}>

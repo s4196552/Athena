@@ -120,3 +120,83 @@
 .none { color: var(--faint); font-size: var(--fs-footnote); margin: 0; }
 .note { margin: var(--space-3) 0 0; font-size: var(--fs-caption); line-height: 1.55; color: var(--faint); }
 .error { margin: var(--space-3) 0 0; font-size: var(--fs-footnote); color: var(--danger); line-height: 1.45; }
+
+/* ---------- the agent, on one file ---------- */
+.insightError {
+  margin: var(--space-2) 0 0;
+  font-size: var(--fs-footnote); line-height: 1.55;
+  color: var(--danger);
+  background: color-mix(in srgb, var(--danger) 10%, transparent);
+  border: 1px solid color-mix(in srgb, var(--danger) 30%, transparent);
+  border-radius: var(--r-sm);
+  padding: var(--space-2) var(--space-3);
+}
+
+.insight { margin-top: var(--space-2); }
+.insightSummary {
+  margin: 0;
+  font-size: var(--fs-subhead); line-height: 1.6;
+  color: var(--label);
+}
+
+.reads {
+  list-style: none; margin: var(--space-3) 0 0; padding: 0;
+  display: flex; flex-direction: column; gap: var(--space-1);
+}
+.reads li {
+  display: flex; align-items: flex-start; gap: var(--space-1);
+  font-size: var(--fs-caption); line-height: 1.5;
+  color: var(--label-2);
+}
+.reads svg { color: var(--ok); flex: 0 0 auto; margin-top: 2px; }
+
+/* Drawn as its own block rather than a footnote. The limits of a description
+   written without opening the file are part of the description. */
+.unknowns {
+  margin-top: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  background: var(--bg-sunk);
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+}
+.unknownsLabel {
+  display: flex; align-items: center; gap: var(--space-1);
+  margin: 0 0 var(--space-1);
+  font-size: var(--fs-caption); font-weight: 600;
+  text-transform: uppercase; letter-spacing: var(--ls-eyebrow);
+  color: var(--faint);
+}
+.unknowns ul { list-style: none; margin: 0; padding: 0; }
+.unknowns li {
+  font-size: var(--fs-caption); line-height: 1.55; color: var(--muted);
+}
+.unknowns li + li { margin-top: 2px; }
+
+.insightBy {
+  margin: var(--space-2) 0 0;
+  font-size: var(--fs-caption); color: var(--faint);
+}
+
+/* ---------- related ---------- */
+.related { list-style: none; margin: 0; padding: 0; }
+.relatedRow { padding: var(--space-2) 0; border-bottom: 1px solid var(--line-soft); }
+.relatedRow:last-child { border-bottom: 0; }
+
+.relatedHead { display: flex; justify-content: space-between; gap: var(--space-2); }
+.relatedName {
+  font-size: var(--fs-footnote); font-weight: 500; color: var(--text);
+  overflow-wrap: anywhere;
+}
+.relatedScore {
+  font-size: var(--fs-caption); color: var(--muted);
+  font-variant-numeric: tabular-nums; flex: 0 0 auto;
+}
+.relatedWhy {
+  margin: 2px 0 0;
+  font-size: var(--fs-caption); line-height: 1.5; color: var(--faint);
+}
+.sameFolder {
+  display: inline-flex; align-items: center; gap: 2px;
+  margin-right: var(--space-1);
+  color: var(--muted);
+}
