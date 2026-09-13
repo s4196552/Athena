@@ -386,6 +386,27 @@ section('albums');
     'same workspace, same grant, lesser role');
 }
 
+// ===========================================================================
+section('briefs');
+// ===========================================================================
+{
+  const health = await json('/api/health');
+  check('health reports whether a model key is configured',
+    typeof health.data.ai?.configured === 'boolean',
+    `ai.configured = ${health.data.ai?.configured}, model ${health.data.ai?.model}`);
+
+  /* The key must never appear in a response, and `configured` is the only
+     field that may depend on it. A status endpoint that echoes a secret is a
+     classic way to leak one. */
+  const body = JSON.stringify(health.data);
+  check('the key itself is never reported',
+    !/AIza|GEMINI_API_KEY=/.test(body));
+
+  const page = await get('/w/hadesmedia-ops/library?topic=finance&doctype=invoice', iris);
+  check('the library offers a summary of the selection',
+    page.body.includes('Summarise'));
+}
+
 console.log(
   `\n${failures === 0 ? `all ${checks} checks passed` : `${failures} of ${checks} FAILED`}\n`,
 );

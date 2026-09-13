@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { getRepository } from '@/lib/data';
 import { describeScope } from '@/lib/data/json/scope';
 import { DEMO_AUTH } from '@/lib/auth/mode';
+import { geminiStatus } from '@/lib/ai/gemini';
 import type { UserId } from '@/lib/data/types';
 
 /* The deploy smoke test.
@@ -34,6 +35,11 @@ export async function GET(request: Request) {
         ? 'unset — using the demo fallback key (fixture accounts only)'
         : 'MISSING — sign-in will fail',
     demoAuth: DEMO_AUTH,
+    /* Presence only, never the value -- the same rule as authSecret above.
+       Without this, a deployment missing GEMINI_API_KEY silently serves
+       counted-only briefs and looks identical to one where the model is
+       working, which is a confusing thing to debug from the outside. */
+    ai: geminiStatus(),
   };
 
   if (!deep) return NextResponse.json(base);

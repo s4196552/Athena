@@ -156,6 +156,34 @@ Python detection the old static setup existed to avoid.
 | `AUTH_SECRET` | **yes, in production** | Signs the session cookie (HMAC-SHA256). Unset in production the app throws at first use — loudly, rather than silently rejecting every session and presenting as an unexplained redirect loop back to `/login`. |
 | `ATHENA_DATA_DRIVER` | no (`json`) | Which repository driver backs the catalogue. |
 | `ATHENA_GATEWAY_URL` | no | Shows the Railway gateway's health on the landing page. Fetched **server-side**, which is why the CSP can be `connect-src 'self'` instead of the old `connect-src *`. |
+| `GEMINI_API_KEY` | no | Lets **Summarise this selection** add a model-written opening paragraph. Without it the site still produces the counted brief, which is the half carrying every number. `GOOGLE_API_KEY` is accepted as an alias. |
+| `GEMINI_MODEL` | no (`gemini-3.1-flash`) | Model ids move faster than deploys. |
+| `ATHENA_AI_VIEWER_DAILY` | no (`25`) | Model-written summaries per viewer per day. |
+| `ATHENA_AI_DAILY_MAX` | no (`400`) | Per lambda instance per day. See the caveat below. |
+
+#### One key, a public demo
+
+The site calls Gemini **server-side only** — `lib/ai/gemini.ts` imports
+`server-only`, so an accidental import from a client component fails the build
+rather than shipping the key to a browser. The key travels in an
+`x-goog-api-key` header rather than the query string, because a URL with a key
+in it ends up in logs and proxies.
+
+What leaves the server is a few hundred tokens of **already-aggregated counts**
+— "42 invoices, 3 authors, 2023–2025". Not file content, because this catalogue
+has none: the seed holds names, sizes, dates and tag ids. The caller cannot make
+a request bigger, because the caller does not supply the payload; the server
+builds it from the catalogue.
+
+Be clear-eyed about the caps in `lib/brief/budget.ts`. The per-viewer counter is
+a cookie and the per-instance counter resets on a cold start and is not shared
+between lambdas. They keep the demo tidy; they are **not** a billing guarantee.
+What actually bounds the exposure is the payload shape above. **Set a spending
+limit in Google AI Studio as well** if this deployment is public.
+
+`GET /api/health` reports `ai.configured` — presence only, never the value — so
+a deployment that is quietly serving counted-only briefs is distinguishable from
+one where the model is working.
 
 ```bash
 cd cloud
@@ -188,8 +216,11 @@ to adopt before the app works.
 
 Vercel's filesystem is read-only at runtime and lambdas are ephemeral, so:
 mock sign-ups live for one server process, and colour groups are stored per
-viewer in `localStorage`. Both say so in the UI. The repository interface
-already has the seam (`getColorGroups`) for when there is a real store.
+viewer in `localStorage`. Tag corrections and albums are held in a per-workspace
+cookie, and brief text is cached in module memory for thirty minutes. All of
+them say so in the UI. The repository interface already has the seams
+(`getColorGroups`, and `readOverlay` in `lib/overlay/store.ts`) for when there
+is a real store.
 
 ### What not to do with it
 

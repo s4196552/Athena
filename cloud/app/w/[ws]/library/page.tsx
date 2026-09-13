@@ -9,6 +9,7 @@ import { library } from '@/lib/data/json/load';
 import { TagIcon, Icon } from '@/lib/icons';
 import { LibraryBrowser, type FileView, type TagView } from '@/components/library/LibraryBrowser';
 import { AlbumRail, type AlbumView } from '@/components/library/AlbumRail';
+import { BriefPanel } from '@/components/library/BriefPanel';
 import s from './library.module.css';
 
 export const dynamic = 'force-dynamic';
@@ -176,6 +177,9 @@ export default async function LibraryPage({
             {query.q ? ` matching “${query.q}”` : ''}
           </p>
           <div className={s.spacer} />
+          {/* Summarises THIS selection, so the filter in the URL is the input.
+              Serialised canonically so the same selection is one cache key. */}
+          <BriefPanel ws={ws} query={toSearchParams(query).toString()} />
           <Link href={`/w/${ws}/graph?${toSearchParams(query)}`} className={s.linkBtn}>
             <Icon name="hub" size={14} /> View as graph
           </Link>
