@@ -16,12 +16,18 @@ import type { UserId } from '@/lib/data/types';
 export async function GET(request: Request) {
   const deep = new URL(request.url).searchParams.get('deep') === '1';
 
+  /* `authSecret` reports PRESENCE ONLY, never the value. Without it, a
+     deployment missing AUTH_SECRET builds cleanly, serves every public page
+     correctly, and then fails only at sign-in with an opaque 500 digest --
+     which is genuinely hard to diagnose from the outside. One boolean here
+     turns that guessing game into a fact. */
   const base = {
     ok: true,
     app: 'athena-cloud',
     driver: process.env.ATHENA_DATA_DRIVER ?? 'json',
     runtime: process.version,
     commit: process.env.VERCEL_GIT_COMMIT_SHA ?? 'local',
+    authSecret: process.env.AUTH_SECRET ? 'set' : 'MISSING — sign-in will fail',
   };
 
   if (!deep) return NextResponse.json(base);

@@ -54,6 +54,13 @@ export async function requireSession(nextPath?: string): Promise<Session> {
 //  Writing
 // ---------------------------------------------------------------------------
 
+/** True when the throw came from an unset AUTH_SECRET rather than a real
+ *  failure. Worth distinguishing: it is a deployment mistake with a specific
+ *  fix, and surfacing it as "something went wrong" wastes an afternoon. */
+function isMisconfigured(err: unknown): boolean {
+  return err instanceof Error && err.message.includes('AUTH_SECRET');
+}
+
 async function issue(userId: UserId, workspaceId: WorkspaceId | null): Promise<Session | null> {
   const repo = getRepository();
   const user = await provider.loadUser(userId);
@@ -91,10 +98,22 @@ export async function signIn(email: string, password?: string): Promise<AuthResu
     };
   }
 
-  const session = await issue(user.id, null);
-  return session
-    ? { ok: true, session }
-    : { ok: false, error: 'Could not start a session.' };
+  try {
+    const session = await issue(user.id, null);
+    return session
+      ? { ok: true, session }
+      : { ok: false, error: 'Could not start a session.' };
+  } catch (err) {
+    if (isMisconfigured(err)) {
+      return {
+        ok: false,
+        error:
+          'This deployment is missing AUTH_SECRET, so sessions cannot be signed. '
+          + 'Set it in the hosting environment and redeploy — see /api/health.',
+      };
+    }
+    throw err;
+  }
 }
 
 export async function signUp(input: SignUpInput): Promise<AuthResult> {
@@ -108,10 +127,22 @@ export async function signUp(input: SignUpInput): Promise<AuthResult> {
     return { ok: false, error: err instanceof Error ? err.message : 'Could not create the account.' };
   }
 
-  const session = await issue(user.id, null);
-  return session
-    ? { ok: true, session }
-    : { ok: false, error: 'Account created, but the session could not start.' };
+  try {
+    const session = await issue(user.id, null);
+    return session
+      ? { ok: true, session }
+      : { ok: false, error: 'Account created, but the session could not start.' };
+  } catch (err) {
+    if (isMisconfigured(err)) {
+      return {
+        ok: false,
+        error:
+          'This deployment is missing AUTH_SECRET, so sessions cannot be signed. '
+          + 'Set it in the hosting environment and redeploy — see /api/health.',
+      };
+    }
+    throw err;
+  }
 }
 
 export async function signOut(): Promise<void> {

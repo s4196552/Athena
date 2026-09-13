@@ -95,6 +95,9 @@ section('catalogue loaded');
   const main = r.data?.catalogue?.find((l) => l.slug === 'hadesmedia-main');
   check('main library has its files', main?.files === 6120, `${main?.files} files`);
   check('read-only guarantee carried through', main?.mutations === 0);
+  // Without this, a deployment missing AUTH_SECRET builds cleanly, serves every
+  // public page, and fails only at sign-in with an opaque 500 digest.
+  check('AUTH_SECRET is configured', r.data?.authSecret === 'set', String(r.data?.authSecret));
 }
 
 // ===========================================================================
