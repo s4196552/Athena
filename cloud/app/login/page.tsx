@@ -3,7 +3,7 @@ import { redirect } from 'next/navigation';
 import { getSession, demoAccounts } from '@/lib/auth';
 import { getRepository } from '@/lib/data';
 import s from '../(auth)/auth.module.css';
-import { LoginForm } from './LoginForm';
+import { AccountPicker } from './AccountPicker';
 
 export const dynamic = 'force-dynamic';
 
@@ -17,14 +17,21 @@ export default async function LoginPage({
 
   if (await getSession()) redirect(next ?? '/app');
 
-  // Demo chips carry the workspaces each account can reach, because the point
-  // of the demo is the tenancy model and that is the fastest way to show it.
+  /* Each account is listed with the workspaces it can reach, because the point
+     of the demo is the tenancy model and this is the fastest way to show it.
+     Priya is the interesting one: she is in Marketing AND Finance, which is
+     what makes the workspace switcher worth opening. */
   const repo = getRepository();
   const users = await demoAccounts();
-  const chips = await Promise.all(
+  const accounts = await Promise.all(
     users.map(async (u) => {
       const ws = await repo.listWorkspacesForUser(u.id);
-      return { user: u, where: ws.map((w) => w.name).join(' + ') || 'no workspace' };
+      return {
+        email: u.email,
+        name: u.name,
+        avatarHue: u.avatarHue,
+        where: ws.map((w) => w.name).join(' + ') || 'no workspace',
+      };
     }),
   );
 
@@ -36,13 +43,24 @@ export default async function LoginPage({
           <span>Athena</span>
         </Link>
 
-        <h1 className={s.title}>Sign in</h1>
-        <p className={s.sub}>Open a shared library and its graph.</p>
+        <h1 className={s.title}>Choose an account</h1>
+        <p className={s.sub}>
+          Pick a name to open its workspaces and their shared library.
+        </p>
 
-        <LoginForm next={next ?? null} chips={chips} />
+        <AccountPicker next={next ?? null} accounts={accounts} />
+
+        <p className={s.note}>
+          This is a demo with no sign-up and no passwords. Every account below is
+          a fixture, and the library they read is sample data committed to the
+          repository — so there is nothing to authenticate and nothing private
+          behind it. Real accounts would change that, and the sign-in boundary in{' '}
+          <code>lib/auth</code> is built for the swap.
+        </p>
 
         <p className={s.alt}>
-          No account? <Link href="/signup">Create one</Link>
+          Try <strong>Priya Raman</strong> — she is in both Marketing and
+          Finance, which share one catalogue.
         </p>
       </div>
     </main>

@@ -1,7 +1,7 @@
 'use server';
 
 import { redirect } from 'next/navigation';
-import { signIn, signUp, signOut, switchWorkspace } from '@/lib/auth';
+import { signIn, signOut, switchWorkspace } from '@/lib/auth';
 import type { WorkspaceId } from '@/lib/data/types';
 
 export interface FormState {
@@ -18,25 +18,17 @@ function safeNext(raw: FormDataEntryValue | null): string | null {
   return value;
 }
 
+/* The account picker posts an email and no password, because there is none to
+ * post. signIn() still takes an optional password so the boundary does not
+ * have to change when real credentials arrive. */
 export async function signInAction(_prev: FormState, formData: FormData): Promise<FormState> {
   const email = String(formData.get('email') ?? '');
-  const password = String(formData.get('password') ?? '');
   const next = safeNext(formData.get('next'));
 
-  const result = await signIn(email, password);
+  const result = await signIn(email);
   if (!result.ok) return { error: result.error };
 
   redirect(next ?? (result.session.workspaceId ? '/app' : '/app/select'));
-}
-
-export async function signUpAction(_prev: FormState, formData: FormData): Promise<FormState> {
-  const result = await signUp({
-    email: String(formData.get('email') ?? ''),
-    name: String(formData.get('name') ?? ''),
-    password: String(formData.get('password') ?? ''),
-  });
-  if (!result.ok) return { error: result.error };
-  redirect('/app/select');
 }
 
 export async function signOutAction(): Promise<void> {

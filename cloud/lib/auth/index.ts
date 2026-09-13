@@ -116,6 +116,10 @@ export async function signIn(email: string, password?: string): Promise<AuthResu
   }
 }
 
+/** Not reachable from the UI: the demo has no sign-up, because there are no
+ *  real accounts to create. Kept because it is part of the boundary a real
+ *  provider has to implement, and deleting it would only mean writing it
+ *  again. */
 export async function signUp(input: SignUpInput): Promise<AuthResult> {
   if (!input.email.includes('@')) return { ok: false, error: 'That does not look like an email address.' };
   if (input.password.length < 6) return { ok: false, error: 'Use at least six characters.' };

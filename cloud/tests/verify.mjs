@@ -114,9 +114,12 @@ section('signed out');
 }
 {
   const r = await get('/login');
-  check('login page renders', r.status === 200 && r.body.includes('Sign in'));
+  check('login page renders', r.status === 200 && r.body.includes('Choose an account'));
   check('offers demo accounts', r.body.includes('Priya Raman'));
-  check('is honest that auth is mocked', r.body.includes('any password is accepted'));
+  check('says plainly there is no sign-up or password',
+    /no sign-up and no passwords/i.test(r.body));
+  check('no password field is presented', !/type="password"/i.test(r.body));
+  check('sign-up route is gone', (await get('/signup')).status === 404);
 }
 
 // ===========================================================================
