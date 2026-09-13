@@ -145,11 +145,39 @@ export async function writeProse(prompt: string): Promise<BriefProse> {
  * good -- "API key not valid" and "API key expired" are different problems with
  * different fixes, and collapsing them into "AI unavailable" throws the useful
  * half away. The KEY is never echoed, only Google's verdict on it. */
+/* A fingerprint, not the key.
+ *
+ * When a credential works from a laptop and is refused from a lambda, the
+ * boring explanation is almost always that the two are not the same string --
+ * a truncated paste, a trailing newline, a smart quote picked up on the way
+ * through a dialog box. That is invisible from the outside and impossible to
+ * check against a secret you cannot read back.
+ *
+ * Length plus the first three and last four characters settles it, and gives
+ * away seven characters of a fifty-three character key: enough to compare two
+ * copies, not enough to reconstruct one. `clean` is the field that actually
+ * catches the common case. */
+function fingerprint(key: string): {
+  length: number; starts: string; ends: string; clean: boolean;
+} {
+  return {
+    length: key.length,
+    starts: key.slice(0, 3),
+    ends: key.slice(-4),
+    // Vercel does not always trim, and an invisible character is the single
+    // most likely reason a correct-looking key is rejected.
+    clean: key === key.trim() && !/["'\s]/.test(key),
+  };
+}
+
 export async function probeGemini(): Promise<{
   ok: boolean; model: string; status?: number; detail?: string;
+  key?: ReturnType<typeof fingerprint>;
 }> {
+  const raw = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY || '';
   const key = geminiKey();
   if (!key) return { ok: false, model: MODEL, detail: 'GEMINI_API_KEY is not set' };
+  const print = fingerprint(raw);
 
   try {
     const res = await fetch(`${BASE}?pageSize=1`, {
@@ -157,16 +185,19 @@ export async function probeGemini(): Promise<{
       signal: AbortSignal.timeout(10_000),
       cache: 'no-store',
     });
-    if (res.ok) return { ok: true, model: MODEL, status: res.status };
+    if (res.ok) return { ok: true, model: MODEL, status: res.status, key: print };
 
     const body = await res.text();
     const message = (() => {
       try { return JSON.parse(body)?.error?.message; } catch { return undefined; }
     })();
-    return { ok: false, model: MODEL, status: res.status, detail: (message ?? body).slice(0, 200) };
+    return {
+      ok: false, model: MODEL, status: res.status,
+      detail: (message ?? body).slice(0, 200), key: print,
+    };
   } catch (err) {
     return {
-      ok: false, model: MODEL,
+      ok: false, model: MODEL, key: print,
       detail: err instanceof Error ? err.message.slice(0, 200) : 'request failed',
     };
   }
