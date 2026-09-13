@@ -174,7 +174,10 @@ DEFAULT_MODELS: dict[str, str] = {
     "ollama": "qwen2.5vl:3b",
     "anthropic": "claude-opus-5",
     "openai": "gpt-5.6-luna",
-    "gemini": "gemini-3.1-flash",
+    # Verified against models.list. `gemini-3.1-flash` was here and is not a
+    # published id -- only the -image, -lite and -tts variants carry that
+    # version number -- so `ATHENA_AI_PROVIDER=gemini` 404'd on the first call.
+    "gemini": "gemini-3.5-flash-lite",
 }
 
 

@@ -22,8 +22,14 @@ import 'server-only';
 
 const BASE = 'https://generativelanguage.googleapis.com/v1beta/models';
 
-/** Overridable because model ids move faster than deploys do. */
-export const MODEL = process.env.GEMINI_MODEL || 'gemini-3.1-flash';
+/* Overridable because model ids move faster than deploys do -- and verified
+ * against models.list rather than copied from the engine, which still carried
+ * `gemini-3.1-flash`: a plausible-looking id that Google does not publish, and
+ * therefore a 404 on the first real call.
+ *
+ * The lite tier is the right default for this workload: a few hundred tokens
+ * of counts in, at most 700 of prose out, on a shared key. */
+export const MODEL = process.env.GEMINI_MODEL || 'gemini-3.5-flash-lite';
 
 /* The response shape, mirroring ANALYSIS_SCHEMA in athena/ai/base.py. Gemini
  * rejects `additionalProperties`, which is why the Python side filters it out

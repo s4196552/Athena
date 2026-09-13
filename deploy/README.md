@@ -157,7 +157,7 @@ Python detection the old static setup existed to avoid.
 | `ATHENA_DATA_DRIVER` | no (`json`) | Which repository driver backs the catalogue. |
 | `ATHENA_GATEWAY_URL` | no | Shows the Railway gateway's health on the landing page. Fetched **server-side**, which is why the CSP can be `connect-src 'self'` instead of the old `connect-src *`. |
 | `GEMINI_API_KEY` | no | Lets **Summarise this selection** add a model-written opening paragraph. Without it the site still produces the counted brief, which is the half carrying every number. `GOOGLE_API_KEY` is accepted as an alias. |
-| `GEMINI_MODEL` | no (`gemini-3.1-flash`) | Model ids move faster than deploys. |
+| `GEMINI_MODEL` | no (`gemini-3.5-flash-lite`) | Model ids move faster than deploys. |
 | `ATHENA_AI_VIEWER_DAILY` | no (`25`) | Model-written summaries per viewer per day. |
 | `ATHENA_AI_DAILY_MAX` | no (`400`) | Per lambda instance per day. See the caveat below. |
 

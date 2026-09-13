@@ -397,10 +397,19 @@ section('briefs');
 
   /* The key must never appear in a response, and `configured` is the only
      field that may depend on it. A status endpoint that echoes a secret is a
-     classic way to leak one. */
+     classic way to leak one.
+     Two shapes, because Google issues both: `AIza...` from AI Studio and
+     `AQ.Ab8...` from the OAuth-backed flow. Matching only the first is how a
+     leak check passes while the key it was written to catch walks past it. */
   const body = JSON.stringify(health.data);
   check('the key itself is never reported',
-    !/AIza|GEMINI_API_KEY=/.test(body));
+    !/AIza[0-9A-Za-z_-]{10}|AQ\.[A-Za-z0-9_-]{20}|GEMINI_API_KEY=\S/.test(body));
+
+  /* And never in the HTML either. lib/ai/gemini.ts imports `server-only`, so
+     a client import fails the build -- this is the belt to that braces. */
+  const lib = await get('/w/hadesmedia-ops/library', iris);
+  check('the key never reaches the browser bundle',
+    !/AIza[0-9A-Za-z_-]{10}|AQ\.[A-Za-z0-9_-]{20}/.test(lib.body));
 
   const page = await get('/w/hadesmedia-ops/library?topic=finance&doctype=invoice', iris);
   check('the library offers a summary of the selection',
