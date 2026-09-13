@@ -39,13 +39,30 @@ export interface Candidate {
   has: { kind: string; display: string }[];
   /** Sort key. Higher means "look at this one first". */
   priority: number;
+  /** How many tags the file carries in total, before `has` is truncated for
+   *  display. Shown so the ordering is checkable rather than mysterious. */
+  tagCount: number;
 }
 
 /* Both axes missing is worse than one, and a missing doctype is worse than a
  * missing topic: the engine treats a null doctype as unsure on its own, while
- * a weak topic only matters below a threshold. A file with no tags whatsoever
- * is the worst case and sorts first. */
+ * a weak topic only matters below a threshold. How sparse the file is overall
+ * is added separately, below. */
 const WEIGHT: Record<Gap, number> = { doctype: 3, topic: 2 };
+
+function depthOf(parentRel: string): number {
+  return parentRel.split('/').filter(Boolean).length;
+}
+
+/** Words a classifier could use. Digits, version stamps and one- or two-letter
+ *  fragments are not evidence about what a file is about. */
+function wordsIn(name: string): number {
+  return name
+    .toLowerCase()
+    .replace(/\.[a-z0-9]+$/, '')
+    .split(/[^a-z]+/)
+    .filter((w) => w.length > 2).length;
+}
 
 export function buildQueue(
   files: FileRecord[],
@@ -73,11 +90,34 @@ export function buildQueue(
     if (!gaps.length) continue;
 
     let priority = gaps.reduce((sum, g) => sum + WEIGHT[g], 0);
-    // Nothing at all known about it: no author, no date, no pattern either.
-    if (has.length === 0) priority += 4;
-    // A file with a long name in a deep folder gives the agent more to work
-    // with than `IMG_0042.jpg` in the root, and is likelier to be decidable.
-    if (f.parentRel) priority += 1;
+
+    /* HOW LITTLE IS KNOWN, which is the signal that actually varies.
+     *
+     * Worth measuring rather than assuming: in the seeded catalogue every
+     * single file already carries a doctype, so the gap is always the topic
+     * and the weights above are the same for every candidate. Ranking on them
+     * alone would have collapsed the queue to alphabetical order while looking
+     * like it was prioritising something.
+     *
+     * What does differ is how much else the file carries. A file known only by
+     * its year is a worse position to be in than one with an author, a date and
+     * three structural patterns, and it is likelier that a human glance adds
+     * something. Sparse files therefore sort first. */
+    priority += Math.max(0, 6 - has.length);
+
+    /* EVIDENCE IN THE PATH, which is all the model is ever given.
+     *
+     * `IMG_0042.jpg` in the library root and
+     * `Art_Assets/SolarVanguard/Concept_Art/solarvanguard_lighting_141.psd`
+     * are the same problem to the queue above and completely different
+     * problems to anything that has to decide them. Sorting the second kind
+     * first means a reviewer's model calls land on the files a name and a
+     * folder can actually settle, instead of being spent confirming that
+     * `IMG_0042.jpg` is undecidable.
+     *
+     * Capped, because a very deep path is not proportionally more informative
+     * and would otherwise dominate the sparsity term. */
+    priority += Math.min(2, depthOf(f.parentRel ?? '')) + Math.min(3, wordsIn(f.name));
 
     out.push({
       fileId: f.id,
@@ -90,6 +130,7 @@ export function buildQueue(
       mtime: f.mtime,
       gaps,
       has: has.slice(0, 6),
+      tagCount: has.length,
       priority,
     });
   }

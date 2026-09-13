@@ -89,8 +89,10 @@ export function AgentClient({ ws, queue, canAccept, modelReady, total }: Props) 
       <p className={s.queueHead}>
         The {formatNumber(queue.length)} worth looking at first
         {total > queue.length && <>, of {formatNumber(total)}</>}. Missing a kind
-        counts for more than missing a topic, and a file with no tags at all
-        sorts to the top.
+        counts for more than missing a topic. After that it is the files whose name
+        and folder give the agent most to work with, because that is all it is
+        given — a call spent on <code>IMG_0042.jpg</code> in the root can only
+        come back undecided.
       </p>
 
       <ul className={s.list}>
@@ -135,7 +137,7 @@ export function AgentClient({ ws, queue, canAccept, modelReady, total }: Props) 
 
               {file.has.length > 0 && (
                 <p className={s.hasRow}>
-                  Already tagged:{' '}
+                  Known by {file.tagCount} {file.tagCount === 1 ? 'tag' : 'tags'}:{' '}
                   {file.has.map((t) => (
                     <span key={`${t.kind}-${t.display}`} className={s.hasTag}>
                       {t.display}
