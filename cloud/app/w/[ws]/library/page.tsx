@@ -3,8 +3,9 @@ import { notFound } from 'next/navigation';
 import { requireSession } from '@/lib/auth';
 import { getRepository } from '@/lib/data';
 import { parseFilterParams, toSearchParams, hasAnyFilter } from '@/lib/filter/params';
-import { formatBytes, formatCount } from '@/lib/format';
+import { formatCount } from '@/lib/format';
 import { library } from '@/lib/data/json/load';
+import { LibraryBrowser, type FileView } from '@/components/library/LibraryBrowser';
 import s from './library.module.css';
 
 export const dynamic = 'force-dynamic';
@@ -63,6 +64,31 @@ export default async function LibraryPage({
 
   const active = Object.entries(query.tags ?? {}).flatMap(([kind, names]) =>
     names.map((name) => ({ kind, name })));
+
+  /* Flattened for the client component. Resolving the doctype and the user
+     tags here means the browser receives one string per column instead of tag
+     ids plus a tag table it would have to join against. */
+  const views: FileView[] = page.files.map((f) => {
+    const doctype = f.tags
+      .map((id) => tagById.get(id))
+      .find((t) => t?.kind === 'doctype');
+    return {
+      id: f.id,
+      name: f.name,
+      relPath: f.relPath,
+      parentRel: f.parentRel,
+      ext: f.ext,
+      sizeBytes: f.sizeBytes,
+      mtime: f.mtime,
+      mediaType: f.mediaType,
+      kind: doctype?.displayName ?? f.mediaType,
+      userTags: (f.userTags ?? [])
+        .filter((u) => u.workspaceId === ctx.workspace.id)
+        .map((u) => tagById.get(u.tagId)?.displayName ?? '')
+        .filter(Boolean),
+      tintHex: f.tintHex ?? MEDIA_TINT[f.mediaType],
+    };
+  });
 
   return (
     <div className={s.layout}>
@@ -123,34 +149,7 @@ export default async function LibraryPage({
             Nothing matches. {hasAnyFilter(query) ? 'Try removing a filter.' : ''}
           </p>
         ) : (
-          <div className={s.grid}>
-            {page.files.map((f) => {
-              const own = f.userTags?.filter((u) => u.workspaceId === ctx.workspace.id) ?? [];
-              return (
-                <article key={f.id} className={s.card}>
-                  <div
-                    className={s.thumb}
-                    style={{ background: f.tintHex ?? MEDIA_TINT[f.mediaType] }}
-                  >
-                    <span className={s.ext}>{f.ext}</span>
-                  </div>
-                  <h3 className={s.name} title={f.relPath}>{f.name}</h3>
-                  <p className={s.meta}>
-                    {formatBytes(f.sizeBytes)} · {f.parentRel.replace(/\/$/, '')}
-                  </p>
-                  {own.length > 0 && (
-                    <p className={s.userTags}>
-                      {own.map((u) => (
-                        <span key={u.tagId} className={s.userTag}>
-                          {tagById.get(u.tagId)?.displayName ?? ''}
-                        </span>
-                      ))}
-                    </p>
-                  )}
-                </article>
-              );
-            })}
-          </div>
+          <LibraryBrowser files={views} accent={ctx.workspace.accentHex} />
         )}
 
         {page.nextCursor && (

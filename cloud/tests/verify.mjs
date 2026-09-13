@@ -191,6 +191,21 @@ section('user tags are workspace-scoped');
 }
 
 // ===========================================================================
+section('library views');
+// ===========================================================================
+{
+  const r = await get('/w/hadesmedia-ops/library', iris);
+  check('library renders', r.status === 200);
+  check('offers Auto / Grid / List', ['>Auto<', '>Grid<', '>List<'].every((x) => r.body.includes(x)));
+  check('has an iCloud-style size slider', /type="range"/.test(r.body));
+  // Auto splits on media type: a spreadsheet has no thumbnail worth 200px.
+  check('auto mode separates media from documents',
+    r.body.includes('Photos &') && r.body.includes('Documents &'));
+  check('list carries the columns a document needs',
+    ['>Kind<', '>Size<', '>Modified<', '>Folder<'].every((x) => r.body.includes(x)));
+}
+
+// ===========================================================================
 section('file graph');
 // ===========================================================================
 {

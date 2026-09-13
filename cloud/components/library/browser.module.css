@@ -1,0 +1,120 @@
+/* ---------- controls ---------- */
+.controls {
+  display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+
+.modes { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+.mode {
+  padding: 5px 13px; font: inherit; font-size: 12.5px;
+  color: var(--muted); background: transparent; border: 0; cursor: pointer;
+}
+.mode:hover { color: var(--text); background: #1f2836; }
+.modeOn { color: #06101f; background: var(--ws-accent, var(--accent)); font-weight: 500; }
+
+/* The iCloud/Finder zoom control: a small square, a slider, a larger square.
+   No numbers -- the sizes are a feel, not a measurement. */
+.sizer { display: inline-flex; align-items: center; gap: 8px; }
+.sizer input { width: 116px; cursor: pointer; }
+.sizer input:disabled { opacity: .35; cursor: default; }
+.sizeIcon { font-size: 8px; color: var(--faint); line-height: 1; }
+.sizeIconLarge { font-size: 14px; color: var(--faint); line-height: 1; }
+
+/* ---------- section headings (auto mode only) ---------- */
+.sectionLabel {
+  display: flex; align-items: baseline; gap: 8px;
+  font-size: 11px; text-transform: uppercase; letter-spacing: .08em;
+  color: var(--faint); font-weight: 600;
+  margin: 26px 0 10px;
+}
+.sectionLabel:first-of-type { margin-top: 0; }
+.sectionCount {
+  text-transform: none; letter-spacing: 0; font-weight: 400;
+  color: var(--faint); font-size: 11.5px;
+}
+
+/* ---------- grid ---------- */
+/* grid-template-columns is set inline from the size slider, so the tile width
+   is one number in one place rather than five CSS classes. */
+.grid { display: grid; gap: 12px; }
+.card { min-width: 0; }
+.thumb {
+  aspect-ratio: 4 / 3; border-radius: 8px;
+  border: 1px solid var(--line);
+  display: grid; place-items: center;
+  margin-bottom: 6px;
+}
+.ext {
+  font-size: 10px; text-transform: uppercase; letter-spacing: .07em;
+  color: #ffffffcc; font-weight: 600;
+  background: #0009; border-radius: 4px; padding: 2px 6px;
+}
+.name {
+  margin: 0 0 2px; font-size: 12px; font-weight: 500;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.meta {
+  margin: 0; font-size: 11px; color: var(--faint);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+
+/* ---------- list ---------- */
+.listWrap {
+  border: 1px solid var(--line); border-radius: var(--radius);
+  overflow-x: auto;
+}
+.list { width: 100%; border-collapse: collapse; font-size: 13px; }
+.list th, .list td {
+  text-align: left; padding: 7px 12px;
+  border-bottom: 1px solid var(--line-soft);
+  white-space: nowrap;
+}
+.list tbody tr:last-child td { border-bottom: 0; }
+/* `top: 0`, not `top: var(--topbar)`.
+ *
+ * .listWrap sets overflow-x, which makes it a scroll container on BOTH axes,
+ * so a sticky header resolves against the wrapper rather than the viewport.
+ * Offsetting by the topbar height therefore pushed the header 52px down from
+ * the top of its own container and straight over the first row. The wrapper
+ * never scrolls vertically -- the page does -- so 0 is the correct offset. */
+.list thead th {
+  position: sticky; top: 0; z-index: 1;
+  font-size: 10px; text-transform: uppercase; letter-spacing: .07em;
+  color: var(--faint); font-weight: 600;
+  background: var(--bg-raised);
+}
+.list tbody tr:hover { background: #161d28; }
+
+/* The name gets the room it needs and the folder gets enough to be useful --
+   truncating the folder to "Art..." told you nothing it did not already say. */
+.colName { width: 38%; max-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.colKind { width: 12%; color: var(--muted); }
+.colSize { width: 9%; text-align: right; font-variant-numeric: tabular-nums; color: var(--muted); }
+.colDate { width: 13%; color: var(--muted); }
+.colWhere {
+  width: 28%; max-width: 0;
+  color: var(--faint); overflow: hidden; text-overflow: ellipsis;
+  direction: rtl; text-align: left;   /* keep the leaf folder, drop the root */
+}
+
+.rowName { display: inline-flex; align-items: center; gap: 8px; min-width: 0; max-width: 100%; }
+.rowName > :last-child { overflow: hidden; text-overflow: ellipsis; }
+.badge {
+  flex: 0 0 auto;
+  font-size: 9px; text-transform: uppercase; letter-spacing: .06em;
+  font-weight: 600; color: #ffffffdd;
+  border-radius: 3px; padding: 2px 5px; min-width: 30px; text-align: center;
+}
+
+.rowTags { display: inline-flex; gap: 4px; margin-left: 8px; }
+/* Ringed rather than filled, so a person's tag reads as distinct from a
+   machine's -- the same distinction asset_tag.source makes in the schema. */
+.userTag {
+  font-size: 10px; padding: 0 5px; border-radius: 999px;
+  border: 1px solid currentColor;
+}
+
+@media (max-width: 720px) {
+  .colDate, .colWhere { display: none; }
+  .colName { width: auto; }
+}
