@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { select } from 'd3-selection';
 import { zoom, zoomIdentity, type ZoomTransform } from 'd3-zoom';
 import { quadtree, type Quadtree } from 'd3-quadtree';
-import { draw, radiusOf, type Frame } from './renderer';
+import { draw, radiusOf, type Band, type Frame } from './renderer';
 import type { SimParams } from './sim.worker';
 import s from './graph.module.css';
 
@@ -17,6 +17,8 @@ export interface GraphData {
   x: number[];
   y: number[];
   colors: string[];
+  /** Explicit radii. Without them nodes are sized by degree. */
+  radii?: number[];
 }
 
 interface Props {
@@ -25,12 +27,25 @@ interface Props {
   search: string;
   showLabels: boolean;
   showOrphans: boolean;
+  /** False for a layout that is already final -- the pyramid. The canvas then
+   *  never starts a worker, because relaxing a layered drawing with a force
+   *  would destroy the only thing it is for: rows that mean something. */
+  simulate?: boolean;
+  bands?: Band[];
+  /** World units of empty space to reserve on the left when fitting, for
+   *  anything drawn outside the nodes' own extent -- the band captions. */
+  insetLeft?: number;
+  curved?: boolean;
+  labelAll?: boolean;
+  labelGap?: number;
   onHover?: (index: number | null) => void;
   onSelect?: (index: number) => void;
 }
 
 export function GraphCanvas({
-  data, params, search, showLabels, showOrphans, onHover, onSelect,
+  data, params, search, showLabels, showOrphans,
+  simulate = true, bands, insetLeft = 0, curved, labelAll, labelGap,
+  onHover, onSelect,
 }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
@@ -48,6 +63,17 @@ export function GraphCanvas({
      positions happened to be current at that moment and then silently go
      stale. Null means "not built yet" and the caller falls back to a scan. */
   const hitTreeRef = useRef<Quadtree<number> | null>(null);
+
+  /* Built from the CURRENT contents of positionsRef, so callers must only
+     invoke it once those positions are final -- on settle, or immediately for
+     a layout that never moves. */
+  const indexPositions = useCallback((count: number) => {
+    const pos = positionsRef.current;
+    hitTreeRef.current = quadtree<number>()
+      .x((i) => pos[i * 2])
+      .y((i) => pos[i * 2 + 1])
+      .addAll(Array.from({ length: count }, (_, i) => i));
+  }, []);
 
   // Adjacency, for hover highlighting.
   const adjacency = useMemo(() => {
@@ -94,9 +120,14 @@ export function GraphCanvas({
       matches,
       showLabels,
       showOrphans,
+      radii: data.radii,
+      bands,
+      curved,
+      labelAll,
+      labelGap,
     };
     draw(ctx, frame);
-  }, [data, adjacency, matches, showLabels, showOrphans]);
+  }, [data, adjacency, matches, showLabels, showOrphans, bands, curved, labelAll, labelGap]);
 
   const schedule = useCallback(() => {
     if (rafRef.current) return;
@@ -143,6 +174,13 @@ export function GraphCanvas({
     hitTreeRef.current = null;
     schedule();
 
+    if (!simulate) {
+      // Nothing will move these, so the hit index is correct immediately
+      // rather than after a settle that is never coming.
+      indexPositions(data.count);
+      return;
+    }
+
     const worker = new Worker(new URL('./sim.worker.ts', import.meta.url), { type: 'module' });
     workerRef.current = worker;
 
@@ -157,11 +195,7 @@ export function GraphCanvas({
       } else if (msg.type === 'settled') {
         // Built once, when the layout stops moving. ~0.2 ms for 1,500 inserts,
         // and it then serves every hover for free.
-        const pos = positionsRef.current;
-        hitTreeRef.current = quadtree<number>()
-          .x((i) => pos[i * 2])
-          .y((i) => pos[i * 2 + 1])
-          .addAll(Array.from({ length: count }, (_, i) => i));
+        indexPositions(count);
       }
     };
 
@@ -184,11 +218,11 @@ export function GraphCanvas({
     // `params` is deliberately not a dependency: moving a slider must nudge the
     // running simulation, not tear it down and restart from the seed layout.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [data, schedule]);
+  }, [data, schedule, simulate, indexPositions]);
 
   useEffect(() => {
-    workerRef.current?.postMessage({ type: 'params', params });
-  }, [params]);
+    if (simulate) workerRef.current?.postMessage({ type: 'params', params });
+  }, [params, simulate]);
 
   useEffect(() => { schedule(); }, [data.colors, matches, showLabels, showOrphans, schedule]);
 
@@ -202,6 +236,7 @@ export function GraphCanvas({
     const wy = inverted[1];
     const pos = positionsRef.current;
     const slack = 5 / t.k;
+    const radiusAt = (i: number) => data.radii?.[i] ?? radiusOf(data.degree[i]);
 
     const tree = hitTreeRef.current;
     if (tree) {
@@ -210,7 +245,7 @@ export function GraphCanvas({
       if (!showOrphans && data.degree[found] === 0) return null;
       const dx = pos[found * 2] - wx;
       const dy = pos[found * 2 + 1] - wy;
-      return Math.hypot(dx, dy) <= radiusOf(data.degree[found]) + slack ? found : null;
+      return Math.hypot(dx, dy) <= radiusAt(found) + slack ? found : null;
     }
 
     // While the layout is still moving an index would be stale within a frame,
@@ -222,10 +257,10 @@ export function GraphCanvas({
       const dx = pos[i * 2] - wx;
       const dy = pos[i * 2 + 1] - wy;
       const d = Math.hypot(dx, dy);
-      if (d < bestDist && d <= radiusOf(data.degree[i]) + slack) { best = i; bestDist = d; }
+      if (d < bestDist && d <= radiusAt(i) + slack) { best = i; bestDist = d; }
     }
     return best;
-  }, [data.count, data.degree, showOrphans]);
+  }, [data.count, data.degree, data.radii, showOrphans]);
 
   // Zoom and pan.
   useEffect(() => {
@@ -245,15 +280,48 @@ export function GraphCanvas({
     /* The precomputed layout is in world units centred on the origin, so
        fitting it is arithmetic rather than a measure-then-adjust pass. */
     const rect = canvas.getBoundingClientRect();
-    const extent = 26 * Math.sqrt(Math.max(data.count, 1)) * 1.15;
-    const k = Math.min(rect.width, rect.height) / (extent * 2);
-    selection.call(
-      behaviour.transform,
-      zoomIdentity.translate(rect.width / 2, rect.height / 2).scale(k),
-    );
+
+    if (simulate) {
+      const extent = 26 * Math.sqrt(Math.max(data.count, 1)) * 1.15;
+      const k = Math.min(rect.width, rect.height) / (extent * 2);
+      selection.call(
+        behaviour.transform,
+        zoomIdentity.translate(rect.width / 2, rect.height / 2).scale(k),
+      );
+    } else {
+      /* A static layout has a known, final bounding box, and its aspect ratio
+         is nothing like the force layout's disc -- a pyramid is wide and
+         short. Fitting the square extent would leave it a ribbon in the middle
+         of an empty canvas, so fit the box it actually occupies. */
+      let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+      for (let i = 0; i < data.count; i++) {
+        if (data.x[i] < minX) minX = data.x[i];
+        if (data.x[i] > maxX) maxX = data.x[i];
+        if (data.y[i] < minY) minY = data.y[i];
+        if (data.y[i] > maxY) maxY = data.y[i];
+      }
+      if (Number.isFinite(minX)) {
+        const pad = 90;
+        const left = minX - insetLeft;
+        const k = Math.max(0.12, Math.min(
+          8,
+          rect.width / (maxX - left + pad * 2),
+          rect.height / (maxY - minY + pad * 2),
+        ));
+        selection.call(
+          behaviour.transform,
+          zoomIdentity
+            .translate(rect.width / 2, rect.height / 2)
+            .scale(k)
+            .translate(-(left + maxX) / 2, -(minY + maxY) / 2),
+        );
+      }
+    }
 
     return () => { selection.on('.zoom', null); };
-  }, [data.count, schedule]);
+    // The fit is re-derived whenever the layout itself changes, which for a
+    // static one means whenever the coordinate arrays are replaced.
+  }, [data.count, data.x, data.y, simulate, insetLeft, schedule]);
 
   return (
     <div className={s.canvasWrap} ref={wrapRef}>

@@ -107,7 +107,9 @@ demo; this is the better fit if the point is that no vendor sees the content.
 ## Vercel — Athena Cloud
 
 `cloud/` is a Next.js app: the landing page, mock accounts, and a shared,
-multi-tenant read of a catalogue with an Obsidian-style graph over it. It
+multi-tenant read of a catalogue with an Obsidian-style graph over it — drawn
+three ways, as a cloud of files, a cloud of tags, or a pyramid that stacks the
+tags from broadest to most specific by which ones contain which. It
 replaces the hand-written `site/index.html`, which was ported into
 `cloud/app/page.tsx` and removed (git still has it).
 
@@ -190,6 +192,7 @@ cd cloud
 npm install
 npm run seed            # regenerate the committed catalogue (deterministic)
 npm run check:taxonomy  # fails if the TS taxonomy has drifted from the Python
+npm run check:pyramid   # the pyramid layout, checked without a browser
 npm run build
 vercel deploy --prod
 ```

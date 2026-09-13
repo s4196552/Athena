@@ -51,11 +51,20 @@ export interface TagGraph {
   files: number;
 }
 
+export interface TagGraphOptions {
+  /** Edge budget. The default keeps the picture legible; the pyramid raises it
+   *  because a dropped pair there is not a missing line, it is a missing
+   *  level. */
+  maxEdges?: number;
+}
+
 export function buildTagGraph(
   files: FileRecord[],
   tagById: Map<number, TagRecord>,
   tagIdsOf: (f: FileRecord) => number[],
+  options: TagGraphOptions = {},
 ): TagGraph {
+  const maxEdges = options.maxEdges ?? MAX_TAG_EDGES;
   const kinds = new Set<string>(GRAPH_KINDS);
 
   // --- count, restricted to the drawable kinds
@@ -119,5 +128,5 @@ export function buildTagGraph(
 
   edges.sort((a, b) => b.strength - a.strength || b.weight - a.weight);
 
-  return { nodes, edges: edges.slice(0, MAX_TAG_EDGES), files: files.length };
+  return { nodes, edges: edges.slice(0, maxEdges), files: files.length };
 }

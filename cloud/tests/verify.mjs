@@ -254,6 +254,51 @@ section('tag graph (ported from athena/web/queries.py)');
 }
 
 // ===========================================================================
+section('pyramid graph');
+// ===========================================================================
+{
+  const r = await json('/api/w/hadesmedia-ops/graph?mode=pyramid', iris);
+  const t = await json('/api/w/hadesmedia-ops/graph?mode=tags', iris);
+  const g = r.data;
+  if (!g || !t.data) { check('pyramid payload present', false, `status ${r.status}`); }
+  else {
+  check('serves the same tags as the tag graph', g.nodes.length === t.data.nodes.length,
+    `${g.nodes.length} vs ${t.data.nodes.length}`);
+  // The one difference between the two modes, and the reason it exists: the
+  // pyramid derives containment from this table, so a pair dropped by the edge
+  // budget would silently flatten a level out of the hierarchy.
+  check('ships the pair table untruncated', g.edges.length >= t.data.edges.length,
+    `${g.edges.length} edges vs the tag graph's ${t.data.edges.length}`);
+  check('every edge carries the count the layout divides by',
+    g.edges.every((e) => Number.isInteger(e.weight) && e.weight >= 2));
+  check('every endpoint is a node that was actually sent', (() => {
+    const tids = new Set(g.nodes.map((n) => n.tid));
+    return g.edges.every((e) => tids.has(e.source) && tids.has(e.target));
+  })());
+  check('no pair claims more files than the rarer tag has', (() => {
+    const n = new Map(g.nodes.map((x) => [x.tid, x.n]));
+    return g.edges.every((e) => e.weight <= Math.min(n.get(e.source), n.get(e.target)));
+  })());
+  check('there is a hierarchy in the seeded library to draw', (() => {
+    const n = new Map(g.nodes.map((x) => [x.tid, x.n]));
+    return g.edges.some((e) => {
+      const smaller = Math.min(n.get(e.source), n.get(e.target));
+      return e.weight / smaller >= 0.6 && n.get(e.source) !== n.get(e.target);
+    });
+  })(), 'at least one pair clears the default 60% containment');
+  check('payload stays small enough to ship', r.bytes < 200_000, `${(r.bytes / 1024).toFixed(0)} KB`);
+  }
+}
+
+{
+  const filtered = await json('/api/w/hadesmedia-ops/graph?mode=pyramid&topic=finance', iris);
+  check('a filter narrows the pyramid too', filtered.data?.files > 0
+    && filtered.data.files < (await json('/api/w/hadesmedia-ops/graph?mode=pyramid', iris)).data.files);
+  check('an unknown mode still falls back to files',
+    (await json('/api/w/hadesmedia-ops/graph?mode=triangle', iris)).data?.mode === 'files');
+}
+
+// ===========================================================================
 section('filtering');
 // ===========================================================================
 {

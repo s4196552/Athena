@@ -34,12 +34,51 @@ export interface Frame {
   matches: Set<number> | null;
   showLabels: boolean;
   showOrphans: boolean;
+
+  /* --- optional, and all four are what the pyramid needs to reuse this
+     renderer rather than fork it. Unset, nothing below changes. --- */
+
+  /** Explicit radii, overriding the degree curve. The pyramid sizes by file
+   *  count: degree there is a property of the hierarchy, not of the tag. */
+  radii?: number[];
+  /** Horizontal strata drawn behind everything, one per level. */
+  bands?: Band[];
+  /** Draw edges as vertical curves. In a layered drawing this is not
+   *  decoration: a straight line between two rows is ambiguous about which
+   *  end it leaves from, and a curve that departs downward and arrives
+   *  downward reads as descent at a glance. */
+  curved?: boolean;
+  /** Label every visible node rather than only the big ones. */
+  labelAll?: boolean;
+  /** World units between neighbours. Labels are suppressed when the zoom makes
+   *  that gap too small on screen to fit one, which is cheaper and steadier
+   *  than measuring every string. */
+  labelGap?: number;
+}
+
+export interface Band {
+  y: number;
+  x0: number;
+  x1: number;
+  height: number;
+  label: string;
+  /** Drawn fainter -- the pyramid's row of unattached tags, which is context
+   *  rather than a level of the hierarchy. */
+  muted?: boolean;
 }
 
 export function radiusOf(degree: number): number {
   // Obsidian sizes by link count; degree here means "how much this file has in
   // common with the rest of the library", which is the right thing to enlarge.
   return Math.min(9, 2.2 + 1.7 * Math.sqrt(degree));
+}
+
+/** The radius a frame draws node `i` at, explicit if it was given one. */
+export function radiusIn(
+  frame: Pick<Frame, 'radii' | 'degree'>,
+  i: number,
+): number {
+  return frame.radii ? frame.radii[i] : radiusOf(frame.degree[i]);
 }
 
 export function draw(ctx: CanvasRenderingContext2D, frame: Frame): void {
@@ -51,6 +90,27 @@ export function draw(ctx: CanvasRenderingContext2D, frame: Frame): void {
   ctx.save();
   ctx.translate(transform.x, transform.y);
   ctx.scale(transform.k, transform.k);
+
+  // --- strata, behind everything. Only the pyramid passes any.
+  if (frame.bands?.length) {
+    const pad = 34;
+    for (const band of frame.bands) {
+      ctx.fillStyle = band.muted ? 'rgba(120,138,160,0.035)' : 'rgba(120,138,160,0.062)';
+      ctx.fillRect(
+        band.x0 - pad, band.y - band.height / 2,
+        (band.x1 - band.x0) + pad * 2, band.height,
+      );
+    }
+    // Row captions sit outside the band to its left, at a constant on-screen
+    // size, so they stay readable at any zoom without colliding with a node.
+    ctx.fillStyle = 'rgba(150,168,190,0.65)';
+    ctx.font = `${11 / transform.k}px -apple-system, "Segoe UI", system-ui, sans-serif`;
+    ctx.textAlign = 'right';
+    ctx.textBaseline = 'middle';
+    for (const band of frame.bands) {
+      if (band.label) ctx.fillText(band.label, band.x0 - pad - 12 / transform.k, band.y);
+    }
+  }
 
   const dimming = frame.hover !== null || (frame.matches?.size ?? 0) > 0;
   const lit = (i: number): boolean => {
@@ -73,8 +133,17 @@ export function draw(ctx: CanvasRenderingContext2D, frame: Frame): void {
     const target = !dimming || (lit(a) && lit(b)) ? litPath : dimPath;
     if (target === litPath) hasLit = true; else hasDim = true;
 
-    target.moveTo(positions[a * 2], positions[a * 2 + 1]);
-    target.lineTo(positions[b * 2], positions[b * 2 + 1]);
+    const ax = positions[a * 2];
+    const ay = positions[a * 2 + 1];
+    const bx = positions[b * 2];
+    const by = positions[b * 2 + 1];
+    target.moveTo(ax, ay);
+    if (frame.curved) {
+      const bend = (by - ay) * 0.45;
+      target.bezierCurveTo(ax, ay + bend, bx, by - bend, bx, by);
+    } else {
+      target.lineTo(bx, by);
+    }
   }
 
   ctx.lineWidth = Math.max(0.35, 0.7 / transform.k);
@@ -103,7 +172,7 @@ export function draw(ctx: CanvasRenderingContext2D, frame: Frame): void {
     ctx.fillStyle = color;
     ctx.beginPath();
     for (const i of indices) {
-      const r = radiusOf(degree[i]);
+      const r = radiusIn(frame, i);
       ctx.moveTo(positions[i * 2] + r, positions[i * 2 + 1]);
       ctx.arc(positions[i * 2], positions[i * 2 + 1], r, 0, Math.PI * 2);
     }
@@ -114,7 +183,7 @@ export function draw(ctx: CanvasRenderingContext2D, frame: Frame): void {
   // --- hover ring
   if (frame.hover !== null) {
     const i = frame.hover;
-    const r = radiusOf(degree[i]) + 2.5;
+    const r = radiusIn(frame, i) + 2.5;
     ctx.strokeStyle = '#e6edf3';
     ctx.lineWidth = 1.6 / transform.k;
     ctx.beginPath();
@@ -126,6 +195,10 @@ export function draw(ctx: CanvasRenderingContext2D, frame: Frame): void {
   //     budgeted: only big nodes, only when zoomed in, only on hover, or only
   //     when they match a search.
   const zoomedIn = transform.k > 1.4;
+  /* A label needs room on SCREEN, not in the world, so the test is the gap
+     between neighbours after the zoom is applied. Without it the pyramid's
+     rows overprint themselves the moment it is zoomed out to fit. */
+  const roomToLabel = !frame.labelGap || frame.labelGap * transform.k >= 46;
   if (frame.showLabels || zoomedIn || frame.hover !== null || frame.matches?.size) {
     ctx.fillStyle = 'rgba(230,237,243,0.92)';
     ctx.font = `${Math.max(7, 11 / transform.k)}px -apple-system, "Segoe UI", system-ui, sans-serif`;
@@ -137,10 +210,10 @@ export function draw(ctx: CanvasRenderingContext2D, frame: Frame): void {
       if (!frame.showOrphans && degree[i] === 0) continue;
       const isHover = i === frame.hover || frame.neighbours?.has(i);
       const isMatch = frame.matches?.has(i);
-      const bigEnough = zoomedIn && degree[i] >= 4;
+      const bigEnough = frame.labelAll ? roomToLabel : zoomedIn && degree[i] >= 4;
       if (!isHover && !isMatch && !(frame.showLabels && bigEnough)) continue;
 
-      const r = radiusOf(degree[i]);
+      const r = radiusIn(frame, i);
       const label = frame.labels[i];
       ctx.fillText(
         label.length > 28 ? label.slice(0, 27) + '…' : label,

@@ -4,7 +4,11 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { GraphCanvas, type GraphData } from '@/components/graph/GraphCanvas';
 import { colorAll, usedRules, type TagTableEntry } from '@/lib/graph/colors';
-import { DEFAULT_NODE_COLOR } from '@/lib/graph/constants';
+import { buildPyramid, type Pyramid } from '@/lib/graph/pyramid';
+import {
+  DEFAULT_NODE_COLOR, MIN_CONTAINMENT, PYRAMID_PITCH, PYRAMID_ROW,
+} from '@/lib/graph/constants';
+import type { Band } from '@/components/graph/renderer';
 import type { ColorRule, TagKind } from '@/lib/data/types';
 import type { SimParams } from '@/components/graph/sim.worker';
 import s from '@/components/graph/graph.module.css';
@@ -49,7 +53,16 @@ interface TagPayload {
   label: string;
 }
 
-type Payload = FilePayload | TagPayload;
+/* The pyramid is served by the same builder as the tag graph and arrives in
+   the same shape -- only the edge budget differs -- so it is the tag payload
+   under another name, and the difference lives where it belongs, in the
+   layout. Keeping the two `mode` values in separate types is what lets every
+   branch below narrow on it. */
+interface PyramidPayload extends Omit<TagPayload, 'mode'> {
+  mode: 'pyramid';
+}
+
+type Payload = FilePayload | TagPayload | PyramidPayload;
 
 interface Props {
   ws: string;
@@ -57,21 +70,50 @@ interface Props {
   tagRules: ColorRule[];
 }
 
+type Mode = 'files' | 'tags' | 'pyramid';
+
+/** Shape controls for the pyramid. Containment is the one that changes what
+ *  the drawing CLAIMS; the other two only change how much room it takes. */
+interface PyramidShape {
+  containment: number;
+  rowHeight: number;
+  pitch: number;
+}
+
+const DEFAULT_SHAPE: PyramidShape = {
+  containment: MIN_CONTAINMENT,
+  rowHeight: PYRAMID_ROW,
+  pitch: PYRAMID_PITCH,
+};
+
 export function GraphClient({ ws, fileRules, tagRules }: Props) {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  const [mode, setMode] = useState<'files' | 'tags'>('files');
+  const [mode, setMode] = useState<Mode>('files');
   /* Result carries the request it answers. Deriving `loading` from whether the
      stored key still matches the current one avoids setting state synchronously
      at the top of the fetch effect, which React 19 flags because it triggers a
      cascading render on every filter change. */
   const [result, setResult] = useState<{ key: string; payload?: Payload; error?: string }>({ key: '' });
   const [search, setSearch] = useState('');
-  const [showLabels, setShowLabels] = useState(false);
+  /* Per mode, because the right default differs and switching should not
+     silently undo a choice: sixty tag labels in rows are readable and are half
+     the point of the pyramid, while two thousand file labels at once are a
+     grey smear. */
+  const [labelPrefs, setLabelPrefs] = useState<Record<Mode, boolean>>({
+    files: false, tags: false, pyramid: true,
+  });
   const [showOrphans, setShowOrphans] = useState(true);
   const [params, setParams] = useState<SimParams>(DEFAULT_PARAMS);
+  const [shape, setShape] = useState<PyramidShape>(DEFAULT_SHAPE);
   const [hover, setHover] = useState<number | null>(null);
+
+  const showLabels = labelPrefs[mode];
+  const setShowLabels = useCallback(
+    (on: boolean) => setLabelPrefs((prefs) => ({ ...prefs, [mode]: on })),
+    [mode],
+  );
 
   const filterQuery = searchParams.toString();
   const requestKey = `${ws}|${mode}|${filterQuery}`;
@@ -96,12 +138,13 @@ export function GraphClient({ ws, fileRules, tagRules }: Props) {
   // --- shape whichever payload arrived into what the canvas needs
   const rules = mode === 'files' ? fileRules : tagRules;
 
-  const { data, tagTable, nodeTags } = useMemo((): {
+  const { data, tagTable, nodeTags, pyramid } = useMemo((): {
     data: GraphData | null;
     tagTable: TagTableEntry[];
     nodeTags: { tags: number[]; name?: string; path?: string; ext?: string; mediaType?: string }[];
+    pyramid: Pyramid | null;
   } => {
-    if (!payload) return { data: null, tagTable: [], nodeTags: [] };
+    if (!payload) return { data: null, tagTable: [], nodeTags: [], pyramid: null };
 
     if (payload.mode === 'files') {
       const table: TagTableEntry[] = payload.tagTable.map((t) => ({
@@ -127,6 +170,7 @@ export function GraphClient({ ws, fileRules, tagRules }: Props) {
         },
         tagTable: table,
         nodeTags: nodes,
+        pyramid: null,
       };
     }
 
@@ -135,6 +179,42 @@ export function GraphClient({ ws, fileRules, tagRules }: Props) {
     const table: TagTableEntry[] = payload.nodes.map((n) => ({
       kind: n.kind as TagKind, name: n.name,
     }));
+    const nodeTags = payload.nodes.map((n, i) => ({ tags: [i], name: n.label }));
+
+    if (payload.mode === 'pyramid') {
+      const layout = buildPyramid(payload.nodes, payload.edges, shape);
+
+      // Parent first, so the renderer's curves all depart downward.
+      const edges: number[] = [];
+      const weights: number[] = [];
+      for (const e of layout.edges) {
+        edges.push(e.parent, e.child);
+        weights.push(Math.max(1, Math.round(e.containment * 255)));
+      }
+      const degree = payload.nodes.map(
+        (_, i) => layout.parents[i].length + layout.children[i].length,
+      );
+
+      /* Sized by files, not by degree. In the file graph degree means "how
+         much this has in common with everything else", which is worth
+         enlarging; here it would only mean "how many rows this tag happens to
+         touch", and the number a reader wants from the apex is how much of the
+         library it covers. */
+      const biggest = Math.max(1, ...payload.nodes.map((n) => n.n));
+      const radii = payload.nodes.map((n) => 3.2 + 7.3 * Math.sqrt(n.n / biggest));
+
+      return {
+        data: {
+          count: payload.nodes.length,
+          labels: payload.nodes.map((n) => n.label),
+          degree, edges, weights, x: layout.x, y: layout.y, colors: [], radii,
+        },
+        tagTable: table,
+        nodeTags,
+        pyramid: layout,
+      };
+    }
+
     const index = new Map(payload.nodes.map((n, i) => [n.tid, i]));
     const edges: number[] = [];
     const weights: number[] = [];
@@ -165,9 +245,50 @@ export function GraphClient({ ws, fileRules, tagRules }: Props) {
         degree, edges, weights, x, y, colors: [],
       },
       tagTable: table,
-      nodeTags: payload.nodes.map((n, i) => ({ tags: [i], name: n.label })),
+      nodeTags,
+      pyramid: null,
     };
-  }, [payload]);
+  }, [payload, shape]);
+
+  /* One stratum per level, drawn behind the nodes. The row captions are the
+     only thing that says which way is up, so they are part of the drawing
+     rather than a legend somewhere else on the page. */
+  const bands = useMemo((): Band[] | undefined => {
+    if (!pyramid || !data) return undefined;
+    const visible = pyramid.layers.filter((layer) => showOrphans || !layer.unattached);
+    if (!visible.length) return undefined;
+
+    /* Every stratum spans the WHOLE drawing rather than only its own nodes.
+       Ragged bands read as blocks of unrelated width; equal ones read as
+       levels, and they put the captions in a column instead of a staircase. */
+    const xs = visible.flatMap((layer) => layer.nodes.map((i) => data.x[i]));
+    const x0 = Math.min(...xs);
+    const x1 = Math.max(...xs);
+
+    /* One band per GROUP, not per row: the unattached tags wrap over several
+       rows and are one thing, so four separate stripes would say the opposite.
+       The caption then centres on the block it names. */
+    const out: Band[] = [];
+    for (const layer of visible) {
+      const previous = out[out.length - 1];
+      if (layer.continues && previous) {
+        const bottom = layer.y + shape.rowHeight * 0.31;
+        const top = previous.y - previous.height / 2;
+        previous.y = (top + bottom) / 2;
+        previous.height = bottom - top;
+        continue;
+      }
+      out.push({
+        y: layer.y,
+        x0,
+        x1,
+        height: shape.rowHeight * 0.62,
+        label: `${layer.label} · ${layer.groupSize}`,
+        muted: layer.unattached,
+      });
+    }
+    return out;
+  }, [pyramid, data, shape.rowHeight, showOrphans]);
 
   /* Colours are resolved on the client from the CSR tag matrix, so editing a
      rule recolours every node in under a millisecond with no refetch. */
@@ -185,7 +306,7 @@ export function GraphClient({ ws, fileRules, tagRules }: Props) {
 
   const onSelect = useCallback((index: number) => {
     if (!payload) return;
-    if (payload.mode === 'tags') {
+    if (payload.mode !== 'files') {
       // Clicking a tag adds it to the filter. That is what turns the graph
       // from a picture into a way of navigating.
       const node = payload.nodes[index];
@@ -195,6 +316,7 @@ export function GraphClient({ ws, fileRules, tagRules }: Props) {
         qs.set(node.kind, [...existing, node.name].join(','));
         router.push(`/w/${ws}/graph?${qs}`);
       }
+      return;
     } else {
       router.push(`/w/${ws}/library?q=${encodeURIComponent(payload.labels[index])}`);
     }
@@ -202,6 +324,34 @@ export function GraphClient({ ws, fileRules, tagRules }: Props) {
 
   const hint = useMemo(() => {
     if (hover === null || !payload || !data) return '';
+
+    /* The pyramid's tooltip answers the question the drawing raises -- why is
+       this tag on THIS row -- by naming the relation and quoting the number it
+       was derived from, so the claim stays checkable. */
+    if (payload.mode === 'pyramid') {
+      if (!pyramid) return '';
+      const node = payload.nodes[hover];
+      const above = pyramid.parents[hover]
+        .map((i) => payload.nodes[i].label)
+        .slice(0, 3);
+      const below = pyramid.children[hover].length;
+      const containment = pyramid.edges
+        .filter((e) => e.child === hover)
+        .sort((a, b) => b.containment - a.containment)[0];
+
+      const parts = [`${node.label} — ${node.n.toLocaleString()} files`];
+      if (above.length && containment) {
+        parts.push(`${Math.round(containment.containment * 100)}% of them are also `
+          + `${payload.nodes[containment.parent].label}`);
+      } else if (!above.length && below) {
+        parts.push('a top-level tag here');
+      } else if (!above.length) {
+        parts.push('nothing contains it and it contains nothing');
+      }
+      if (below) parts.push(`${below} narrower ${below === 1 ? 'tag' : 'tags'} below`);
+      return parts.join(' · ');
+    }
+
     if (payload.mode === 'tags') {
       const node = payload.nodes[hover];
       const linked = payload.edges
@@ -218,34 +368,33 @@ export function GraphClient({ ws, fileRules, tagRules }: Props) {
     }
     const deg = data.degree[hover];
     return `${payload.labels[hover]} — ${payload.paths[hover]} · ${deg === 0 ? 'no shared tags' : deg + ' connections'}`;
-  }, [hover, payload, data]);
+  }, [hover, payload, data, pyramid]);
 
   const caption = !payload
     ? 'Loading…'
-    : payload.mode === 'tags'
-      ? `${payload.nodes.length} tags across ${payload.files.toLocaleString()} files`
-      : `${payload.ids.length.toLocaleString()} files, ${(payload.edges.length / 2).toLocaleString()} links`;
+    : payload.mode === 'pyramid'
+      ? `${payload.nodes.length} tags in ${pyramid?.layers.length ?? 0} levels`
+        + ` across ${payload.files.toLocaleString()} files`
+      : payload.mode === 'tags'
+        ? `${payload.nodes.length} tags across ${payload.files.toLocaleString()} files`
+        : `${payload.ids.length.toLocaleString()} files, ${(payload.edges.length / 2).toLocaleString()} links`;
 
   return (
     <div className={s.page}>
       <div className={s.head}>
         <div className={s.modes} role="group" aria-label="Graph mode">
-          <button
-            type="button"
-            className={`${s.mode} ${mode === 'files' ? s.modeActive : ''}`}
-            onClick={() => setMode('files')}
-            aria-pressed={mode === 'files'}
-          >
-            Files
-          </button>
-          <button
-            type="button"
-            className={`${s.mode} ${mode === 'tags' ? s.modeActive : ''}`}
-            onClick={() => setMode('tags')}
-            aria-pressed={mode === 'tags'}
-          >
-            Tags
-          </button>
+          {(['files', 'tags', 'pyramid'] as const).map((option) => (
+            <button
+              key={option}
+              type="button"
+              className={`${s.mode} ${mode === option ? s.modeActive : ''}`}
+              onClick={() => setMode(option)}
+              aria-pressed={mode === option}
+              title={MODE_HELP[option]}
+            >
+              {MODE_LABEL[option]}
+            </button>
+          ))}
         </div>
 
         <p className={s.caption}>
@@ -269,7 +418,7 @@ export function GraphClient({ ws, fileRules, tagRules }: Props) {
         </label>
         <label className={s.toggle}>
           <input type="checkbox" checked={showOrphans} onChange={(e) => setShowOrphans(e.target.checked)} />
-          Orphans
+          {mode === 'pyramid' ? 'Unattached' : 'Orphans'}
         </label>
       </div>
 
@@ -281,6 +430,16 @@ export function GraphClient({ ws, fileRules, tagRules }: Props) {
             search={search}
             showLabels={showLabels}
             showOrphans={showOrphans}
+            /* The pyramid's coordinates ARE the answer, so nothing is allowed
+               to move them afterwards. */
+            simulate={mode !== 'pyramid'}
+            bands={bands}
+            /* Room for the row captions, which hang off the left of the
+               drawing and would otherwise be fitted straight off the canvas. */
+            insetLeft={mode === 'pyramid' ? shape.pitch * 2.4 : 0}
+            curved={mode === 'pyramid'}
+            labelAll={mode === 'pyramid'}
+            labelGap={mode === 'pyramid' ? shape.pitch : undefined}
             onHover={setHover}
             onSelect={onSelect}
           />
@@ -326,60 +485,136 @@ export function GraphClient({ ws, fileRules, tagRules }: Props) {
             </p>
           </div>
 
-          <div className={s.section}>
-            <p className={s.sectLabel}>Forces</p>
-            <Slider label="Repel" value={params.charge} min={4} max={80} step={1}
-              onChange={(v) => setParams((p) => ({ ...p, charge: v }))} />
-            <Slider label="Link distance" value={params.linkDistance} min={10} max={120} step={1}
-              onChange={(v) => setParams((p) => ({ ...p, linkDistance: v }))} />
-            <Slider label="Link force" value={params.linkStrength} min={0} max={1.5} step={0.05}
-              onChange={(v) => setParams((p) => ({ ...p, linkStrength: v }))} />
-            <Slider label="Centre" value={params.center} min={0} max={0.4} step={0.01}
-              onChange={(v) => setParams((p) => ({ ...p, center: v }))} />
-            <button
-              type="button"
-              className={s.mode}
-              style={{ border: '1px solid var(--line)', borderRadius: 8, marginTop: 4 }}
-              onClick={() => setParams(DEFAULT_PARAMS)}
-            >
-              Reset forces
-            </button>
-          </div>
+          {mode === 'pyramid' ? (
+            <>
+              <div className={s.section}>
+                <p className={s.sectLabel}>Hierarchy</p>
+                <Slider
+                  label="Containment" value={shape.containment} min={0.3} max={0.95} step={0.05}
+                  onChange={(v) => setShape((p) => ({ ...p, containment: v }))}
+                  format={(v) => `${Math.round(v * 100)}%`}
+                />
+                <p className={s.note}>
+                  A tag sits under another when at least this much of it is also
+                  tagged that way. Raise it for a taller, stricter hierarchy;
+                  lower it to pull more tags into the structure.
+                </p>
+                <Slider
+                  label="Level gap" value={shape.rowHeight} min={60} max={200} step={4}
+                  onChange={(v) => setShape((p) => ({ ...p, rowHeight: v }))}
+                />
+                <Slider
+                  label="Spacing" value={shape.pitch} min={60} max={240} step={4}
+                  onChange={(v) => setShape((p) => ({ ...p, pitch: v }))}
+                />
+                <button
+                  type="button"
+                  className={s.mode}
+                  style={{ border: '1px solid var(--line)', borderRadius: 8, marginTop: 4 }}
+                  onClick={() => setShape(DEFAULT_SHAPE)}
+                >
+                  Reset shape
+                </button>
+              </div>
+
+              {pyramid && pyramid.layers.length > 0 && (
+                <div className={s.section}>
+                  <p className={s.sectLabel}>Levels</p>
+                  <ol className={s.levels}>
+                    {pyramid.layers.filter((layer) => !layer.continues).map((layer) => (
+                      <li key={layer.depth} className={layer.unattached ? s.levelLoose : undefined}>
+                        <span>{layer.label}</span>
+                        <span>{layer.groupSize}</span>
+                      </li>
+                    ))}
+                  </ol>
+                </div>
+              )}
+            </>
+          ) : (
+            <div className={s.section}>
+              <p className={s.sectLabel}>Forces</p>
+              <Slider label="Repel" value={params.charge} min={4} max={80} step={1}
+                onChange={(v) => setParams((p) => ({ ...p, charge: v }))} />
+              <Slider label="Link distance" value={params.linkDistance} min={10} max={120} step={1}
+                onChange={(v) => setParams((p) => ({ ...p, linkDistance: v }))} />
+              <Slider label="Link force" value={params.linkStrength} min={0} max={1.5} step={0.05}
+                onChange={(v) => setParams((p) => ({ ...p, linkStrength: v }))} />
+              <Slider label="Centre" value={params.center} min={0} max={0.4} step={0.01}
+                onChange={(v) => setParams((p) => ({ ...p, center: v }))} />
+              <button
+                type="button"
+                className={s.mode}
+                style={{ border: '1px solid var(--line)', borderRadius: 8, marginTop: 4 }}
+                onClick={() => setParams(DEFAULT_PARAMS)}
+              >
+                Reset forces
+              </button>
+            </div>
+          )}
         </aside>
       </div>
 
       <p className={s.hint}>
-        {hint || (mode === 'tags'
-          ? 'Click a tag to add it to the filter.'
-          : 'Hover a file to see what it is tied to. Click to open it in the library.')}
+        {hint || HINT[mode]}
       </p>
 
       {/* A canvas graph is invisible to a screen reader; this is the same
           information as focusable links. */}
       <ul className={s.srOnly}>
-        {payload?.mode === 'tags'
-          ? payload.nodes.slice(0, 20).map((n) => (
-              <li key={n.tid}>{n.label}: {n.n} files</li>
-            ))
-          : payload?.labels.slice(0, 20).map((label, i) => (
+        {payload?.mode === 'files'
+          ? payload.labels.slice(0, 20).map((label, i) => (
               <li key={payload.ids[i]}>{label}</li>
-            ))}
+            ))
+          : payload?.mode === 'tags'
+            ? payload.nodes.slice(0, 20).map((n) => (
+                <li key={n.tid}>{n.label}: {n.n} files</li>
+              ))
+            : payload && pyramid
+              // Level by level, which is the structure a sighted reader gets
+              // from the rows and would otherwise be lost entirely.
+              ? pyramid.layers.map((layer) => (
+                  <li key={layer.depth}>
+                    {layer.label}: {layer.nodes.map((i) => payload.nodes[i].label).join(', ')}
+                  </li>
+                ))
+              : null}
       </ul>
     </div>
   );
 }
 
+const MODE_LABEL: Record<Mode, string> = {
+  files: 'Files',
+  tags: 'Tags',
+  pyramid: 'Pyramid',
+};
+
+const MODE_HELP: Record<Mode, string> = {
+  files: 'Every file in the selection, linked by the tags they share.',
+  tags: 'Tags linked by appearing on the same file.',
+  pyramid: 'Tags stacked general to specific, by which ones contain which.',
+};
+
+const HINT: Record<Mode, string> = {
+  files: 'Hover a file to see what it is tied to. Click to open it in the library.',
+  tags: 'Click a tag to add it to the filter.',
+  pyramid: 'General tags at the top, the ones they contain below. Click a tag to filter by it.',
+};
+
 function Slider({
-  label, value, min, max, step, onChange,
+  label, value, min, max, step, onChange, format,
 }: {
   label: string; value: number; min: number; max: number; step: number;
   onChange: (v: number) => void;
+  /** For values a bare number reads badly as -- 0.6 meaning "60% of them". */
+  format?: (v: number) => string;
 }) {
   return (
     <label className={s.slider}>
       <span className={s.sliderHead}>
         <span>{label}</span>
-        <span>{value}</span>
+        <span>{format ? format(value) : value}</span>
       </span>
       <input
         className={s.range}

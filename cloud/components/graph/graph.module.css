@@ -85,3 +85,21 @@
   position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
   overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
 }
+
+/* --- pyramid controls --- */
+
+.note {
+  margin: -4px 0 14px; font-size: 11.5px; line-height: 1.45; color: var(--faint);
+}
+
+.levels { list-style: none; margin: 0; padding: 0; counter-reset: none; }
+.levels li {
+  display: flex; justify-content: space-between; gap: 10px;
+  font-size: 12.5px; color: var(--muted);
+  padding: 4px 0; border-bottom: 1px solid var(--line-soft);
+}
+.levels li:last-child { border-bottom: 0; }
+.levels li span:last-child { color: var(--faint); font-variant-numeric: tabular-nums; }
+/* The unattached row is context, not a level, and the list says so the same
+   way the canvas does -- by drawing it fainter. */
+.levelLoose { opacity: .6; }

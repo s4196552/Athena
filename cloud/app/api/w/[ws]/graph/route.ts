@@ -5,7 +5,7 @@ import { workspaceContext } from '@/lib/data/context';
 import { library } from '@/lib/data/json/load';
 import { buildTagGraph } from '@/lib/graph/tagGraph';
 import { induceFileGraph } from '@/lib/graph/fileGraph';
-import { DEFAULT_FILE_NODES, MAX_FILE_NODES } from '@/lib/graph/constants';
+import { DEFAULT_FILE_NODES, MAX_FILE_NODES, MAX_PYRAMID_EDGES } from '@/lib/graph/constants';
 import { parseFilterParams } from '@/lib/filter/params';
 import type { FileRecord, TagRecord, LibraryId } from '@/lib/data/types';
 
@@ -27,7 +27,8 @@ export async function GET(
   if (!ctx) return NextResponse.json({ error: 'not found' }, { status: 404 });
 
   const url = new URL(request.url);
-  const mode = url.searchParams.get('mode') === 'tags' ? 'tags' : 'files';
+  const requested = url.searchParams.get('mode');
+  const mode = requested === 'tags' || requested === 'pyramid' ? requested : 'files';
   const query = parseFilterParams(url.searchParams);
 
   const page = await repo.listFiles(ctx, { ...query, limit: Number.MAX_SAFE_INTEGER });
@@ -53,8 +54,15 @@ export async function GET(
     return ctx.overlay.removals.length ? all.filter((id) => !ctx.isRemoved(f.id, id)) : all;
   };
 
-  if (mode === 'tags') {
-    const graph = buildTagGraph(selected, tagById, tagIdsOf);
+  if (mode === 'tags' || mode === 'pyramid') {
+    /* One builder, two modes. They differ in a single number: the pyramid
+       reads the pair table untruncated, because it derives containment from
+       it and a pair dropped by the edge budget would silently flatten a level
+       out of the hierarchy. The LAYOUT is not computed here -- it is pure
+       arithmetic over this payload and runs on the client, so the containment
+       and spacing controls re-derive the whole thing without a refetch. */
+    const graph = buildTagGraph(selected, tagById, tagIdsOf,
+      mode === 'pyramid' ? { maxEdges: MAX_PYRAMID_EDGES } : {});
     return NextResponse.json({ mode, ...graph, label: describe(query) });
   }
 
