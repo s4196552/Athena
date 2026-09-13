@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { GraphCanvas, type GraphData } from '@/components/graph/GraphCanvas';
+import { GraphAsk } from './GraphAsk';
 import { colorAll, usedRules, type TagTableEntry } from '@/lib/graph/colors';
 import { buildPyramid, type Pyramid } from '@/lib/graph/pyramid';
 import {
@@ -116,6 +117,12 @@ export function GraphClient({ ws, fileRules, tagRules }: Props) {
     files: false, tags: false, pyramid: true,
   });
   const [showOrphans, setShowOrphans] = useState(true);
+  /* Two separate things, deliberately. Hovering a colour group asks "which of
+     these are they" and is answered by dimming the rest; clicking one says
+     "only these", and the rest leave the drawing. Held as the group's COLOUR
+     because that is the only identity a drawn node carries -- see `groups`. */
+  const [hoverGroup, setHoverGroup] = useState<string | null>(null);
+  const [pickedGroup, setPickedGroup] = useState<string | null>(null);
   const [params, setParams] = useState<SimParams>(DEFAULT_PARAMS);
   const [shape, setShape] = useState<PyramidShape>(DEFAULT_SHAPE);
   const [hover, setHover] = useState<number | null>(null);
@@ -315,6 +322,60 @@ export function GraphClient({ ws, fileRules, tagRules }: Props) {
 
   const legend = useMemo(() => usedRules(colors, rules), [colors, rules]);
 
+  /* The legend, with the nodes each entry stands for.
+   *
+   * Keyed by COLOUR rather than by rule id, because colour is all a drawn node
+   * carries: colorAll() resolves first-match-wins down to a hex string and
+   * forgets which rule produced it. Two rules sharing one colour are therefore
+   * one group's worth of nodes here -- which is also exactly what the drawing
+   * shows, so the legend cannot promise a distinction the canvas can't make.
+   */
+  const groups = useMemo(() => {
+    const members = new Map<string, number[]>();
+    for (let i = 0; i < colors.length; i++) {
+      /* Counted against what is actually drawn, so the number beside a key,
+         the nodes it lights up and the caption's total are one figure rather
+         than three. Toggling orphans therefore moves these counts, which is
+         the point: they describe the picture, not the catalogue. */
+      if (!showOrphans && data?.degree[i] === 0) continue;
+      const list = members.get(colors[i]);
+      if (list) list.push(i);
+      else members.set(colors[i], [i]);
+    }
+    const out = legend.map((r) => ({
+      id: r.id, color: r.color, label: r.label, nodes: members.get(r.color) ?? [],
+    }));
+    // "Other" is the leftover, so it is only a group when no rule has claimed
+    // the neutral grey for itself.
+    const other = members.get(DEFAULT_NODE_COLOR);
+    if (other && !out.some((g) => g.color === DEFAULT_NODE_COLOR)) {
+      out.push({ id: 'other', color: DEFAULT_NODE_COLOR, label: 'Other', nodes: other });
+    }
+    return out;
+  }, [colors, legend, showOrphans, data]);
+
+  /* Both selections are re-checked against the groups that exist right now
+     rather than trusted from state. A rule can be disabled, recoloured or
+     filtered down to nothing between one render and the next, and a stale
+     pick would then hide the entire graph with no visible way back. */
+  const picked = groups.some((g) => g.color === pickedGroup) ? pickedGroup : null;
+  const hovered = groups.some((g) => g.color === hoverGroup) ? hoverGroup : null;
+  const pickedLabel = groups.find((g) => g.color === picked)?.label;
+  const drawnCount = groups.reduce((n, g) => n + g.nodes.length, 0);
+
+  const nodesOf = useCallback((color: string | null) => {
+    const group = color ? groups.find((g) => g.color === color) : undefined;
+    return group ? new Set(group.nodes) : null;
+  }, [groups]);
+
+  const visible = useMemo(() => nodesOf(picked), [nodesOf, picked]);
+  /* Hovering while a group is picked has nothing to say -- the others are not
+     on screen to dim -- so the button's own hover state carries it instead. */
+  const highlight = useMemo(
+    () => (picked ? null : nodesOf(hovered)),
+    [nodesOf, picked, hovered],
+  );
+
   const onSelect = useCallback((index: number) => {
     if (!payload) return;
     if (payload.mode !== 'files') {
@@ -411,6 +472,10 @@ export function GraphClient({ ws, fileRules, tagRules }: Props) {
         <p className={s.caption}>
           {caption}
           {payload?.label ? ` — ${payload.label}` : ''}
+          {/* Without this the count above keeps claiming the whole library
+              while most of it has left the screen. */}
+          {picked && visible ? ` — showing ${pickedLabel} only, `
+            + `${visible.size.toLocaleString()} of ${drawnCount.toLocaleString()}` : ''}
         </p>
 
         <div className={s.spacer} />
@@ -451,6 +516,8 @@ export function GraphClient({ ws, fileRules, tagRules }: Props) {
             curved={mode === 'pyramid'}
             labelAll={mode === 'pyramid'}
             labelGap={mode === 'pyramid' ? shape.pitch : undefined}
+            highlight={highlight}
+            visible={visible}
             onHover={setHover}
             onSelect={onSelect}
           />
@@ -465,6 +532,18 @@ export function GraphClient({ ws, fileRules, tagRules }: Props) {
         )}
 
         <aside className={s.side}>
+          {/* First in the rail: a question is how you decide what to look at,
+              and the controls below are how you look at it. Applying a plan
+              sets the mode and the URL and nothing else -- the colour rules,
+              sliders and labels are the reader's, not the agent's. */}
+          <GraphAsk
+            ws={ws}
+            onApply={(answer) => {
+              setMode(answer.plan.mode);
+              router.push(answer.href, { scroll: false });
+            }}
+          />
+
           {payload && 'truncated' in payload && payload.truncated && (
             <div className={s.section}>
               <p className={s.banner}>
@@ -476,20 +555,49 @@ export function GraphClient({ ws, fileRules, tagRules }: Props) {
           )}
 
           <div className={s.section}>
-            <p className={s.sectLabel}>Colour groups</p>
-            <div className={s.legend}>
-              {legend.map((r) => (
-                <span key={r.id} className={s.key}>
-                  <i style={{ background: r.color }} />
-                  {r.label}
-                </span>
-              ))}
-              {colors.includes(DEFAULT_NODE_COLOR) && (
-                <span className={s.key}>
-                  <i style={{ background: DEFAULT_NODE_COLOR }} />
-                  Other
-                </span>
+            <div className={s.sectHead}>
+              <p className={s.sectLabel}>Colour groups</p>
+              {picked && (
+                <button type="button" className={s.clearKey} onClick={() => setPickedGroup(null)}>
+                  Show all
+                </button>
               )}
+            </div>
+            {/* Styled from aria-pressed rather than a parallel `on` class, so
+                the state the screen reader is told and the state the eye is
+                shown are the same fact. */}
+            <div
+              className={s.legend}
+              role="group"
+              aria-label="Colour groups"
+              data-picked={picked ? 'true' : undefined}
+            >
+              {groups.map((g) => {
+                const on = picked === g.color;
+                return (
+                  <button
+                    key={g.id}
+                    type="button"
+                    className={s.key}
+                    aria-pressed={on}
+                    title={on
+                      ? `Showing ${g.label} only — click again to bring the rest back`
+                      : `Show only ${g.label}`}
+                    onClick={() => setPickedGroup(on ? null : g.color)}
+                    onPointerEnter={() => setHoverGroup(g.color)}
+                    onPointerLeave={() => setHoverGroup(null)}
+                    /* Focus and blur as well as the pointer: the highlight is
+                       the only thing that says which group a button names, and
+                       tabbing to it has to say it too. */
+                    onFocus={() => setHoverGroup(g.color)}
+                    onBlur={() => setHoverGroup(null)}
+                  >
+                    <i style={{ background: g.color }} />
+                    <span className={s.keyLabel}>{g.label}</span>
+                    <span className={s.keyCount}>{g.nodes.length.toLocaleString()}</span>
+                  </button>
+                );
+              })}
             </div>
             <p style={{ marginTop: 10, fontSize: 12 }}>
               <a href={`/w/${ws}/settings/colors`}>Edit colours →</a>

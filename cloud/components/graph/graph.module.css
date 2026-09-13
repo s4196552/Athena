@@ -72,9 +72,50 @@
 }
 .section { margin-bottom: var(--space-5); }
 
-.legend { display: flex; flex-direction: column; gap: var(--space-1); }
-.key { display: flex; align-items: center; gap: var(--space-2); font-size: var(--fs-subhead); color: var(--muted); }
+.sectHead { display: flex; align-items: baseline; gap: var(--space-2); }
+.sectHead .sectLabel { flex: 1; }
+.clearKey {
+  font: inherit; font-size: var(--fs-caption); color: var(--accent);
+  background: none; border: 0; padding: 0 0 var(--space-2); cursor: pointer;
+}
+.clearKey:hover { text-decoration: underline; }
+
+.legend { display: flex; flex-direction: column; gap: 1px; }
+
+/* Each key is a control, not a caption: hovering one dims the other groups in
+   the drawing and clicking one leaves it alone on screen. The pressed look is
+   driven off aria-pressed rather than a second class, so what a screen reader
+   is told and what the eye is shown cannot drift apart. */
+.key {
+  display: flex; align-items: center; gap: var(--space-2); width: 100%;
+  padding: 4px var(--space-2); margin-left: calc(var(--space-2) * -1);
+  font: inherit; font-size: var(--fs-subhead); color: var(--muted); text-align: left;
+  background: transparent; border: 0; border-radius: 6px; cursor: pointer;
+  transition: background-color .12s ease, color .12s ease, opacity .12s ease;
+}
 .key i { width: 9px; height: 9px; border-radius: 50%; display: inline-block; flex: 0 0 auto; }
+.keyLabel { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.keyCount {
+  margin-left: auto; padding-left: var(--space-2);
+  font-size: var(--fs-caption); color: var(--faint); font-variant-numeric: tabular-nums;
+}
+.key:hover { background: var(--fill-2); color: var(--text); }
+.key:hover .keyCount { color: var(--muted); }
+.key:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+
+.key[aria-pressed='true'] { background: var(--fill-2); color: var(--text); font-weight: 500; }
+/* Two rings, the inner one in the panel's own background, so the halo reads as
+   a halo against a swatch of any colour rather than fusing with it. */
+.key[aria-pressed='true'] i { box-shadow: 0 0 0 2px var(--bg), 0 0 0 3.5px currentColor; }
+
+/* While one group holds the drawing the others stay listed -- they are the way
+   back -- but they step back to say they are not what is on screen. */
+.legend[data-picked='true'] .key[aria-pressed='false'] { opacity: .45; }
+.legend[data-picked='true'] .key[aria-pressed='false']:hover { opacity: 1; }
+
+@media (prefers-reduced-motion: reduce) {
+  .key { transition: none; }
+}
 
 .slider { display: flex; flex-direction: column; gap: 3px; margin-bottom: var(--space-3); }
 .sliderHead { display: flex; justify-content: space-between; font-size: var(--fs-footnote); color: var(--muted); }
@@ -131,3 +172,83 @@
 /* The unattached row is context, not a level, and the list says so the same
    way the canvas does -- by drawing it fainter. */
 .levelLoose { opacity: .6; }
+
+/* ---------- ask, in the sidebar ----------
+   The agent's "ask for a view", put where the answer lands: the drawing
+   rearranges instead of handing over a link to follow. */
+.askRow { display: flex; gap: var(--space-1); }
+.askField {
+  flex: 1; min-width: 0;
+  min-height: var(--control-sm);
+  font: inherit; font-size: var(--fs-footnote);
+  color: var(--text); background: var(--bg-sunk);
+  border: 1px solid var(--line); border-radius: 6px;
+  padding: 3px var(--space-2);
+}
+.askField::placeholder { color: var(--faint); }
+.askField:focus-visible { outline: 2px solid var(--accent); outline-offset: -1px; }
+.askField:disabled { opacity: .6; }
+
+.askBtn {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: var(--control-sm); min-height: var(--control-sm);
+  color: var(--on-accent); background: var(--accent);
+  border: 0; border-radius: 6px; cursor: pointer;
+}
+.askBtn:hover:not(:disabled) { filter: brightness(1.08); }
+.askBtn:active:not(:disabled) { transform: translateY(1px); }
+.askBtn:disabled { opacity: .5; cursor: default; }
+
+.askExamples { list-style: none; margin: var(--space-2) 0 0; padding: 0; }
+.askExamples li + li { margin-top: 2px; }
+.askExamples button {
+  font: inherit; font-size: var(--fs-caption); text-align: left;
+  color: var(--accent); background: none; border: 0; padding: 2px 0;
+  cursor: pointer; text-decoration: underline; text-underline-offset: 2px;
+}
+.askExamples button:hover { filter: brightness(1.15); }
+
+.askNote { margin: var(--space-2) 0 0; font-size: var(--fs-caption); color: var(--faint); }
+
+.askError {
+  margin: var(--space-2) 0 0;
+  font-size: var(--fs-caption); line-height: 1.5; color: var(--danger);
+  background: color-mix(in srgb, var(--danger) 10%, transparent);
+  border: 1px solid color-mix(in srgb, var(--danger) 30%, transparent);
+  border-radius: 6px; padding: var(--space-2);
+}
+
+.askResult { margin-top: var(--space-2); }
+.askTitle {
+  margin: 0 0 var(--space-2);
+  font-size: var(--fs-footnote); font-weight: 600; color: var(--text);
+}
+.askChips { display: flex; flex-wrap: wrap; gap: 3px; }
+.askChip {
+  display: inline-flex; align-items: center; gap: 3px;
+  font-size: var(--fs-caption); color: var(--text);
+  background: var(--fill-selected); border-radius: 999px;
+  padding: 1px var(--space-2);
+}
+/* The axis is named on every chip: "finance" alone is ambiguous — it is a
+   topic here and could have been a keyword — and a filter is only checkable
+   when the axis is visible. */
+.askAxis {
+  text-transform: uppercase; letter-spacing: var(--ls-eyebrow);
+  color: var(--muted); font-weight: 600;
+}
+
+.askCount {
+  margin: var(--space-2) 0 0;
+  font-size: var(--fs-caption); color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+.askWhy {
+  margin: var(--space-1) 0 0;
+  font-size: var(--fs-caption); line-height: 1.5; color: var(--faint);
+}
+.askDropped {
+  display: flex; align-items: flex-start; gap: 3px;
+  margin: var(--space-2) 0 0;
+  font-size: var(--fs-caption); line-height: 1.45; color: var(--warn);
+}

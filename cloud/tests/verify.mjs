@@ -924,6 +924,105 @@ section('the v1 API, which the CLI talks to');
 }
 
 
+// ===========================================================================
+section('the landing page, as onboarding');
+// ===========================================================================
+{
+  const home = await get('/');
+  check('the landing page renders for a signed-out visitor', home.status === 200,
+    `status ${home.status}`);
+
+  /* THE NUMBERS ARE READ, NOT TYPED. The page's whole claim is that its
+     figures are arithmetic over the catalogue rather than assertions, and the
+     least defensible place to break that is the page making the claim. This
+     reads the same seed the page reads and insists they agree, so a reseed
+     that changes the catalogue fails here rather than quietly leaving a stale
+     number on the front page. */
+  const seed = JSON.parse(
+    readFileSync(join(here, '..', 'data', 'seed', 'tenancy.json'), 'utf8'),
+  );
+  const files = seed.libraries.reduce((n, l) => n + l.fileCount, 0);
+  const tags = seed.libraries.reduce((n, l) => n + l.tagCount, 0);
+  const main = seed.libraries.find((l) => l.slug === 'hadesmedia-main')?.fileCount ?? 0;
+  const pretty = (v) => v.toLocaleString('en-US');
+
+  check('it quotes the real file total', home.body.includes(pretty(files)),
+    `expected ${pretty(files)}`);
+  check('it quotes the real tag total', home.body.includes(pretty(tags)),
+    `expected ${pretty(tags)}`);
+  check('the tenancy example quotes the real library size',
+    home.body.includes(pretty(main)), `expected ${pretty(main)}`);
+  check('it claims zero mutations, which is what the seed records',
+    seed.libraries.every((l) => l.mutations === 0));
+
+  /* It must say the demo is not the reader's own data. Leading a hosted demo
+     with "Athena reads your folder" is the one claim this page cannot back up,
+     and the sentence below is what stops it being implied. */
+  check('it says plainly that nothing of the visitor is being read',
+    /not uploading anything/i.test(home.body)
+      && /nothing here reads your machine/i.test(home.body));
+
+  /* Every route into the demo carries where it was going, or sign-in becomes a
+     dead end that drops a cold visitor on a workspace picker with no idea why. */
+  const deep = [...home.body.matchAll(/\/login\?next=([^"'&\s]+)/g)]
+    .map((m) => decodeURIComponent(m[1].replace(/&amp;/g, '&')));
+  check('the demo links carry their destination', deep.length > 0,
+    `${deep.length} deep links`);
+  check('and every destination is a real area of the app',
+    deep.every((d) => d.startsWith('/w/') || d.startsWith('/app')),
+    [...new Set(deep)].slice(0, 4).join(' '));
+
+  const target = [...new Set(deep)].find((d) => d.startsWith('/w/'));
+  if (target) {
+    const picker = await get(`/login?next=${encodeURIComponent(target)}`);
+    check('sign-in keeps that destination', picker.body.includes(`value="${target}"`),
+      target);
+    // And the destination is somewhere a signed-in demo account can reach.
+    const landed = await get(target.split('?')[0], iris);
+    check('and a signed-in account actually lands there', landed.status === 200,
+      `${target} → ${landed.status}`);
+  }
+
+  /* The onboarding sections themselves. Asserted by heading rather than by
+     class name, because the headings are the contract with the reader. */
+  for (const heading of [
+    'Start here',
+    'How it works',
+    'What it will not do',
+    'Three ways to look at it',
+    'What the agent can do',
+    'Run it on your own files',
+  ]) {
+    check(`it has a "${heading}" section`, home.body.includes(heading));
+  }
+
+  check('the agent table marks which verbs need no model',
+    home.body.includes('related') && home.body.includes('repeats'),
+    'two of the five are arithmetic and the page says so');
+}
+
+// ===========================================================================
+section('asking from inside the graph');
+// ===========================================================================
+{
+  const graph = await get('/w/hadesmedia-ops/graph', iris);
+  check('the graph offers the ask control', graph.status === 200
+    && /Ask a question and redraw the graph/.test(graph.body),
+    'the agent, put where the answer lands');
+
+  /* Applying a plan sets the filter and the mode and nothing else. Both halves
+     have to survive the URL, which is what this asserts end to end -- the mode
+     seeded from the query string, and the filter parsed by the same codec the
+     facet rail uses. */
+  const applied = await get('/w/hadesmedia-ops/graph?topic=finance&mode=tags', iris);
+  check('a plan applied as a URL still renders', applied.status === 200);
+  const api = await json('/api/w/hadesmedia-ops/graph?mode=tags&topic=finance', iris);
+  check('and the drawing it asks for has something in it',
+    api.status === 200 && (api.data?.nodes?.length ?? 0) > 0,
+    `${api.data?.nodes?.length ?? 0} nodes`);
+}
+
+
 console.log(
   `\n${failures === 0 ? `all ${checks} checks passed` : `${failures} of ${checks} FAILED`}\n`,
 );

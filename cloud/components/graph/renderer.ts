@@ -34,6 +34,12 @@ export interface Frame {
   matches: Set<number> | null;
   showLabels: boolean;
   showOrphans: boolean;
+  /** When set, the ONLY nodes drawn -- a colour group the reader has picked
+   *  out of the legend. Distinct from `matches`, which dims what it excludes
+   *  and keeps it on screen: a search is a question about a drawing you are
+   *  still looking at, where picking a group says the rest is not the subject.
+   *  Null means every node is drawn. */
+  visible: Set<number> | null;
 
   /* --- optional, and all four are what the pyramid needs to reuse this
      renderer rather than fork it. Unset, nothing below changes. --- */
@@ -118,6 +124,18 @@ export function radiusIn(
   return frame.radii ? frame.radii[i] : radiusOf(frame.degree[i]);
 }
 
+/** Whether node `i` is drawn at all this frame. Two reasons it might not be:
+ *  orphans are switched off, or a colour group has been picked and this node
+ *  is not in it. Everything that iterates nodes or edges asks this, so the two
+ *  reasons cannot drift apart. */
+export function shownIn(
+  frame: Pick<Frame, 'showOrphans' | 'degree' | 'visible'>,
+  i: number,
+): boolean {
+  if (!frame.showOrphans && frame.degree[i] === 0) return false;
+  return !frame.visible || frame.visible.has(i);
+}
+
 export function draw(ctx: CanvasRenderingContext2D, frame: Frame): void {
   const ink = frame.ink ?? DARK_INK;
   const { positions, edges, degree, colors, transform, width, height, dpr } = frame;
@@ -166,7 +184,7 @@ export function draw(ctx: CanvasRenderingContext2D, frame: Frame): void {
   for (let e = 0; e < edges.length; e += 2) {
     const a = edges[e];
     const b = edges[e + 1];
-    if (!frame.showOrphans && (degree[a] === 0 || degree[b] === 0)) continue;
+    if (!shownIn(frame, a) || !shownIn(frame, b)) continue;
 
     const target = !dimming || (lit(a) && lit(b)) ? litPath : dimPath;
     if (target === litPath) hasLit = true; else hasDim = true;
@@ -197,7 +215,7 @@ export function draw(ctx: CanvasRenderingContext2D, frame: Frame): void {
   // --- nodes, grouped by colour so fillStyle changes once per group
   const groups = new Map<string, number[]>();
   for (let i = 0; i < frame.count; i++) {
-    if (!frame.showOrphans && degree[i] === 0) continue;
+    if (!shownIn(frame, i)) continue;
     const key = `${colors[i]}|${dimming && !lit(i) ? 'd' : 'l'}`;
     let g = groups.get(key);
     if (!g) groups.set(key, (g = []));
@@ -245,7 +263,7 @@ export function draw(ctx: CanvasRenderingContext2D, frame: Frame): void {
 
     let budget = 140;
     for (let i = 0; i < frame.count && budget > 0; i++) {
-      if (!frame.showOrphans && degree[i] === 0) continue;
+      if (!shownIn(frame, i)) continue;
       const isHover = i === frame.hover || frame.neighbours?.has(i);
       const isMatch = frame.matches?.has(i);
       const bigEnough = frame.labelAll ? roomToLabel : zoomedIn && degree[i] >= 4;

@@ -96,3 +96,133 @@
 
 .footer { padding: var(--space-6) 0 var(--space-8); color: var(--faint); font-size: var(--fs-subhead); }
 .footer a { color: var(--muted); }
+
+/* ---------- onboarding additions ---------- */
+
+/* Said in the hero, so it is read before the demo is clicked rather than
+   discovered afterwards. Quiet, but not hidden. */
+.note {
+  margin: var(--space-4) 0 0;
+  max-width: var(--measure);
+  font-size: var(--fs-footnote);
+  line-height: 1.6;
+  color: var(--label-2);
+}
+
+.stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: var(--space-3);
+  margin: var(--space-6) 0 0;
+  padding: var(--space-4) 0 0;
+  border-top: 1px solid var(--separator);
+}
+.stats div { margin: 0; }
+.stats dt {
+  font-size: var(--fs-caption);
+  text-transform: uppercase;
+  letter-spacing: var(--ls-eyebrow);
+  font-weight: 600;
+  color: var(--label-2);
+}
+.stats dd {
+  margin: 2px 0 0;
+  font-size: var(--fs-title-2);
+  line-height: var(--lh-title-2);
+  letter-spacing: var(--ls-title-2);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------- start here ---------- */
+.tries {
+  list-style: none;
+  margin: var(--space-5) 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  counter-reset: none;
+}
+.tries li {
+  display: flex;
+  gap: var(--space-4);
+  padding: var(--space-4);
+  background: var(--bg-raised);
+  border: 1px solid var(--separator);
+  border-radius: var(--r-md);
+}
+.tries h3 {
+  margin: 0 0 var(--space-2);
+  font-size: var(--fs-title-3);
+  line-height: var(--lh-title-3);
+  letter-spacing: var(--ls-title-3);
+  font-weight: 600;
+}
+.tries p {
+  margin: 0;
+  max-width: var(--measure);
+  font-size: var(--fs-callout);
+  line-height: 1.6;
+  color: var(--label-2);
+}
+
+/* The numeral is decoration -- the ordered list already carries the sequence
+   for a screen reader, which is why it is aria-hidden. */
+.tryNum, .stepNum {
+  display: flex; align-items: center; justify-content: center;
+  flex: 0 0 auto;
+  width: 28px; height: 28px;
+  border-radius: 50%;
+  font-size: var(--fs-footnote);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--on-accent);
+  background: var(--accent);
+}
+
+.tryGo, .cardGo {
+  display: inline-block;
+  margin-top: var(--space-3);
+  min-height: var(--control-sm);
+  font-size: var(--fs-subhead);
+  font-weight: 500;
+  color: var(--accent);
+  text-decoration: none;
+}
+.tryGo:hover, .cardGo:hover { text-decoration: underline; }
+.cardGo { margin-top: var(--space-2); }
+
+/* ---------- how it works ---------- */
+.steps {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: var(--space-4);
+  margin-top: var(--space-5);
+}
+.step h3 {
+  margin: var(--space-3) 0 var(--space-2);
+  font-size: var(--fs-headline);
+  line-height: var(--lh-headline);
+  font-weight: 600;
+}
+.step p {
+  margin: 0;
+  font-size: var(--fs-subhead);
+  line-height: 1.6;
+  color: var(--label-2);
+}
+
+.sub {
+  margin: var(--space-6) 0 var(--space-2);
+  font-size: var(--fs-title-3);
+  line-height: var(--lh-title-3);
+  font-weight: 600;
+}
+
+@media (max-width: 640px) {
+  /* The numeral and the text stack rather than shrink: at this width a 28px
+     circle beside a paragraph leaves the paragraph about forty characters
+     wide, which is below what prose reads well at. */
+  .tries li { flex-direction: column; gap: var(--space-3); }
+}

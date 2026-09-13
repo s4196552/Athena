@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { select } from 'd3-selection';
 import { zoom, zoomIdentity, type ZoomTransform } from 'd3-zoom';
 import { quadtree, type Quadtree } from 'd3-quadtree';
-import { draw, radiusOf, type Band, type Frame } from './renderer';
+import { draw, radiusOf, shownIn, type Band, type Frame } from './renderer';
 import type { SimParams } from './sim.worker';
 import { usePrefersReducedMotion } from '@/lib/useMediaQuery';
 import { useInk } from './useInk';
@@ -40,6 +40,12 @@ interface Props {
   curved?: boolean;
   labelAll?: boolean;
   labelGap?: number;
+  /** Lit while everything else dims, on top of whatever the search matched.
+   *  The legend passes a colour group here on hover. */
+  highlight?: Set<number> | null;
+  /** The only nodes drawn, when a colour group has been picked. Null draws
+   *  everything. */
+  visible?: Set<number> | null;
   onHover?: (index: number | null) => void;
   onSelect?: (index: number) => void;
 }
@@ -47,7 +53,7 @@ interface Props {
 export function GraphCanvas({
   data, params, search, showLabels, showOrphans,
   simulate = true, bands, insetLeft = 0, curved, labelAll, labelGap,
-  onHover, onSelect,
+  highlight = null, visible = null, onHover, onSelect,
 }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
@@ -93,7 +99,7 @@ export function GraphCanvas({
 
   // Search dims non-matching nodes rather than removing them, so the shape of
   // the graph stays stable while you type.
-  const matches = useMemo(() => {
+  const found = useMemo(() => {
     const q = search.trim().toLowerCase();
     if (!q) return null;
     const set = new Set<number>();
@@ -102,6 +108,18 @@ export function GraphCanvas({
     }
     return set;
   }, [search, data.labels]);
+
+  /* A search and a hovered colour group are the same gesture -- "these, not
+     those" -- so they share one dimming pass rather than fighting over the
+     alpha. Both at once narrows: the nodes in that group whose label also
+     matches. */
+  const matches = useMemo(() => {
+    if (!highlight) return found;
+    if (!found) return highlight;
+    const both = new Set<number>();
+    for (const i of highlight) if (found.has(i)) both.add(i);
+    return both;
+  }, [highlight, found]);
 
   const render = useCallback(() => {
     const canvas = canvasRef.current;
@@ -125,6 +143,7 @@ export function GraphCanvas({
       matches,
       showLabels,
       showOrphans,
+      visible,
       radii: data.radii,
       bands,
       curved,
@@ -133,7 +152,7 @@ export function GraphCanvas({
       ink,
     };
     draw(ctx, frame);
-  }, [data, adjacency, matches, showLabels, showOrphans, bands, curved, labelAll, labelGap, ink]);
+  }, [data, adjacency, matches, showLabels, showOrphans, visible, bands, curved, labelAll, labelGap, ink]);
 
   const schedule = useCallback(() => {
     if (rafRef.current) return;
@@ -235,7 +254,22 @@ export function GraphCanvas({
     if (simulate) workerRef.current?.postMessage({ type: 'params', params });
   }, [params, simulate]);
 
-  useEffect(() => { schedule(); }, [data.colors, matches, showLabels, showOrphans, schedule]);
+  /* A node that has just left the drawing cannot still be the hovered one.
+     The pointer is over the legend when a group is picked, not over the
+     canvas, so nothing else would clear it: the hover ring would be stroked
+     over empty space and the hint below would describe a node nobody can see.
+     Worse, `lit()` would treat the vanished node as the subject and dim every
+     node that IS on screen. */
+  useEffect(() => {
+    const hovered = hoverRef.current;
+    if (hovered !== null && visible && !visible.has(hovered)) {
+      hoverRef.current = null;
+      onHover?.(null);
+      schedule();
+    }
+  }, [visible, onHover, schedule]);
+
+  useEffect(() => { schedule(); }, [data.colors, matches, showLabels, showOrphans, visible, schedule]);
 
   const nodeAt = useCallback((clientX: number, clientY: number): number | null => {
     const canvas = canvasRef.current;
@@ -248,15 +282,20 @@ export function GraphCanvas({
     const pos = positionsRef.current;
     const slack = 5 / t.k;
     const radiusAt = (i: number) => data.radii?.[i] ?? radiusOf(data.degree[i]);
+    /* The same predicate the renderer uses. A node that is not drawn must not
+       be clickable either -- a hidden node answering a click is how a filter
+       turns into a bug report about "the wrong file opening". */
+    const drawn = (i: number) =>
+      shownIn({ showOrphans, degree: data.degree, visible }, i);
 
     const tree = hitTreeRef.current;
     if (tree) {
-      const found = tree.find(wx, wy, 14 / t.k);
-      if (found === undefined) return null;
-      if (!showOrphans && data.degree[found] === 0) return null;
-      const dx = pos[found * 2] - wx;
-      const dy = pos[found * 2 + 1] - wy;
-      return Math.hypot(dx, dy) <= radiusAt(found) + slack ? found : null;
+      const hit = tree.find(wx, wy, 14 / t.k);
+      if (hit === undefined) return null;
+      if (!drawn(hit)) return null;
+      const dx = pos[hit * 2] - wx;
+      const dy = pos[hit * 2 + 1] - wy;
+      return Math.hypot(dx, dy) <= radiusAt(hit) + slack ? hit : null;
     }
 
     // While the layout is still moving an index would be stale within a frame,
@@ -264,14 +303,14 @@ export function GraphCanvas({
     let best: number | null = null;
     let bestDist = Infinity;
     for (let i = 0; i < data.count; i++) {
-      if (!showOrphans && data.degree[i] === 0) continue;
+      if (!drawn(i)) continue;
       const dx = pos[i * 2] - wx;
       const dy = pos[i * 2 + 1] - wy;
       const d = Math.hypot(dx, dy);
       if (d < bestDist && d <= radiusAt(i) + slack) { best = i; bestDist = d; }
     }
     return best;
-  }, [data.count, data.degree, data.radii, showOrphans]);
+  }, [data.count, data.degree, data.radii, showOrphans, visible]);
 
   // Zoom and pan.
   useEffect(() => {
@@ -340,7 +379,10 @@ export function GraphCanvas({
         ref={canvasRef}
         className={s.canvas}
         tabIndex={0}
-        aria-label={'Graph of ' + data.count + ' nodes. A text list of the most connected nodes follows.'}
+        aria-label={
+          'Graph of ' + (visible ? visible.size + ' of ' + data.count : data.count)
+          + ' nodes. A text list of the most connected nodes follows.'
+        }
         onMouseMove={(e) => {
           const found = nodeAt(e.clientX, e.clientY);
           if (found !== hoverRef.current) {
