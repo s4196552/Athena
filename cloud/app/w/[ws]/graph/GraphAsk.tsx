@@ -3,6 +3,7 @@
 import { useState, useTransition } from 'react';
 import { Icon } from '@/lib/icons';
 import { askForView } from '../agent/actions';
+import { ListenButton } from '@/components/speech/ListenButton';
 import type { AskResult } from '../agent/actions';
 import s from '@/components/graph/graph.module.css';
 
@@ -30,10 +31,19 @@ interface Props {
   ws: string;
   /** Applies the plan: the parent owns both the mode and the URL. */
   onApply: (plan: Extract<AskResult, { ok: true }>) => void;
+  /** False when no speech key is configured, in which case the plan can be
+   *  read but not heard. */
+  canSpeak: boolean;
 }
 
-export function GraphAsk({ ws, onApply }: Props) {
+export function GraphAsk({ ws, onApply, canSpeak }: Props) {
   const [question, setQuestion] = useState('');
+  /* The question that produced the result on screen, which is NOT the contents
+     of the box -- someone can start typing the next one while looking at this
+     answer. Speech names a question rather than carrying text, so sending the
+     box instead of this would ask the server to read back a plan for something
+     nobody has asked yet. */
+  const [asked, setAsked] = useState('');
   const [result, setResult] = useState<AskResult | null>(null);
   const [open, setOpen] = useState(false);
   const [pending, start] = useTransition();
@@ -45,6 +55,7 @@ export function GraphAsk({ ws, onApply }: Props) {
     start(async () => {
       const answer = await askForView(ws, q);
       setResult(answer);
+      setAsked(q);
       if (answer.ok) onApply(answer);
     });
   }
@@ -144,6 +155,20 @@ export function GraphAsk({ ws, onApply }: Props) {
               such tag here, so it was left out rather than guessed at.
             </p>
           )}
+
+          {/* The one panel where listening earns its keep outright: the answer
+              is a REDRAWING, so the person pressing this is about to be
+              looking at the graph rather than at the words explaining it.
+              Keyed on the question, so a new answer is never played with the
+              recording of the previous one. */}
+          <ListenButton
+            key={asked}
+            ws={ws}
+            subject={{ kind: 'plan', question: asked }}
+            ready={canSpeak}
+            label="Read it out"
+            trailing
+          />
         </div>
       )}
     </div>

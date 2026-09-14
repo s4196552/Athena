@@ -334,6 +334,17 @@ export default async function Home() {
               </tbody>
             </table>
           </div>
+          {/* Said here rather than as a fourth column, because it is one rule
+              about all three model-backed answers and a column would repeat it
+              three times. The second sentence is the load-bearing half: a
+              Listen button that quietly re-ran the model would cost money and
+              could read you different words than the ones on your screen. */}
+          <p className={s.muted}>
+            With a speech key set, <code>ask</code> and <code>explain</code> — and
+            any summary — can be read aloud, caveats and all. Listening never
+            re-runs the model: it replays the answer already in front of you, or
+            says it cannot.
+          </p>
         </div>
       </section>
 

@@ -69,6 +69,9 @@ interface Props {
   ws: string;
   fileRules: ColorRule[];
   tagRules: ColorRule[];
+  /** Whether this server has a speech key, so the ask panel can offer to read
+   *  its answer aloud. Absent rather than failing when it does not. */
+  speechReady: boolean;
 }
 
 type Mode = 'files' | 'tags' | 'pyramid';
@@ -87,7 +90,7 @@ const DEFAULT_SHAPE: PyramidShape = {
   pitch: PYRAMID_PITCH,
 };
 
-export function GraphClient({ ws, fileRules, tagRules }: Props) {
+export function GraphClient({ ws, fileRules, tagRules, speechReady }: Props) {
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -538,6 +541,7 @@ export function GraphClient({ ws, fileRules, tagRules }: Props) {
               sliders and labels are the reader's, not the agent's. */}
           <GraphAsk
             ws={ws}
+            canSpeak={speechReady}
             onApply={(answer) => {
               setMode(answer.plan.mode);
               router.push(answer.href, { scroll: false });

@@ -6,6 +6,7 @@ import { Icon } from '@/lib/icons';
 import { formatNumber } from '@/lib/format';
 import { askForView } from './actions';
 import type { AskResult } from './actions';
+import { ListenButton } from '@/components/speech/ListenButton';
 import s from './agent.module.css';
 
 /* "Ask for a view."
@@ -34,8 +35,23 @@ const MODE_LABEL: Record<string, string> = {
   pyramid: 'pyramid',
 };
 
-export function AskBox({ ws, ready }: { ws: string; ready: boolean }) {
+export function AskBox({
+  ws,
+  ready,
+  canSpeak,
+}: {
+  ws: string;
+  ready: boolean;
+  /** False when no speech key is configured; the plan is then readable but
+   *  not audible, which is the same shape every other AI control takes here. */
+  canSpeak: boolean;
+}) {
   const [question, setQuestion] = useState('');
+  /* The question the plan on screen came from, which is not necessarily what
+     is in the box -- the next question can be half typed while this answer is
+     still up. Speech names a question rather than carrying text, so it has to
+     name the one that was actually asked. */
+  const [asked, setAsked] = useState('');
   const [result, setResult] = useState<AskResult | null>(null);
   const [pending, start] = useTransition();
 
@@ -43,7 +59,10 @@ export function AskBox({ ws, ready }: { ws: string; ready: boolean }) {
     const q = text.trim();
     if (!q) return;
     setQuestion(q);
-    start(async () => setResult(await askForView(ws, q)));
+    start(async () => {
+      setResult(await askForView(ws, q));
+      setAsked(q);
+    });
   }
 
   return (
@@ -168,6 +187,21 @@ export function AskBox({ ws, ready }: { ws: string; ready: boolean }) {
               <Icon name="view_list" size={14} /> See the files
             </Link>
           </div>
+
+          {/* Below the two ways of opening the plan, because hearing it is a
+              third way of taking it in rather than a fourth destination. The
+              reading always includes the ignored terms above: a question that
+              was half understood must not SOUND like one that was understood.
+              Keyed on the question, so a new plan is never played back with
+              the previous recording. */}
+          <ListenButton
+            key={asked}
+            ws={ws}
+            subject={{ kind: 'plan', question: asked }}
+            ready={canSpeak}
+            label="Read it out"
+            trailing
+          />
         </div>
       )}
     </section>

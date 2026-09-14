@@ -11,6 +11,8 @@ import { classify, type Proposal } from '@/lib/agent/classify';
 import { explain, type Explanation } from '@/lib/agent/explain';
 import { planView, type ViewPlan, type Vocabulary } from '@/lib/agent/view';
 import { findRelated, type Relation } from '@/lib/agent/related';
+import { explainKey, planKey, recallAnswer, rememberAnswer } from '@/lib/agent/recall';
+import { lensTagIds } from '@/lib/data/lens';
 import { toSearchParams } from '@/lib/filter/params';
 import { buildQueue, type Candidate } from '@/lib/agent/queue';
 import { GeminiError, geminiStatus } from '@/lib/ai/gemini';
@@ -192,20 +194,17 @@ export async function acceptTag(
  *  file that writes anything.
  * ------------------------------------------------------------------------- */
 
-/** The tag lens every page reads through, in one place: this workspace's own
- *  tags included, another workspace's excluded, its corrections applied. */
+/** The tag lens every page reads through: this workspace's own tags included,
+ *  another workspace's excluded, its corrections applied. One implementation,
+ *  in lib/data/lens.ts, because the speech route has to compute the SAME ids
+ *  to look up a remembered explanation -- and two hand-written copies that
+ *  differ by a dedupe would simply never find each other. */
 function lensOf(ctx: NonNullable<Awaited<ReturnType<typeof workspaceContext>>>) {
   return (f: {
     id: FileId;
     tags: TagId[];
     userTags?: { workspaceId: string; tagId: TagId }[];
-  }): TagId[] => {
-    const own = (f.userTags ?? [])
-      .filter((u) => u.workspaceId === ctx.workspace.id)
-      .map((u) => u.tagId);
-    const added = [...(ctx.addedTags?.(f.id) ?? [])];
-    return [...f.tags, ...own, ...added].filter((id) => !ctx.isRemoved(f.id, id));
-  };
+  }): TagId[] => lensTagIds(ctx, f);
 }
 
 export type RelatedResult =
@@ -264,15 +263,6 @@ export async function explainFile(ws: string, rawFileId: string): Promise<Explai
   const file = await repo.getFile(ctx, rawFileId as FileId);
   if (!file) return { ok: false, error: NO_FILE };
 
-  const budget = await checkBudget();
-  if (!budget.allowed) {
-    return {
-      ok: false,
-      error: budget.reason
-        ?? `That is ${budget.viewerLimit} model calls today, which is this demo's limit.`,
-    };
-  }
-
   const [page, tags] = await Promise.all([
     repo.listFiles(ctx, { limit: Number.MAX_SAFE_INTEGER }),
     repo.listTags(ctx),
@@ -281,6 +271,28 @@ export async function explainFile(ws: string, rawFileId: string): Promise<Explai
   const lens = lensOf(ctx);
 
   const related = findRelated(file, page.files, lens, tagById, 8);
+
+  /* Asked before anything is spent or even checked. A remembered answer costs
+     nothing, so refusing it on a budget would be refusing to show something
+     this server already has -- and the reason it is kept at all is that the
+     speech route can only READ BACK an explanation, never regenerate one. The
+     key carries the lens, so a workspace that has since corrected a tag on
+     this file gets a fresh answer rather than one describing labels it no
+     longer counts. */
+  const key = explainKey(ctx.workspace.id, file.id, lens(file));
+  const remembered = recallAnswer(key);
+  if (remembered?.kind === 'explain') {
+    return { ok: true, explanation: remembered.explanation, related };
+  }
+
+  const budget = await checkBudget();
+  if (!budget.allowed) {
+    return {
+      ok: false,
+      error: budget.reason
+        ?? `That is ${budget.viewerLimit} model calls today, which is this demo's limit.`,
+    };
+  }
 
   /* Folder neighbours, capped. A folder of 400 files would otherwise put 400
      names in the prompt, and the first eight say as much about what the folder
@@ -305,6 +317,7 @@ export async function explainFile(ws: string, rawFileId: string): Promise<Explai
       related,
     });
     await spend();
+    rememberAnswer(key, { kind: 'explain', subject: file.name, explanation });
     return { ok: true, explanation, related };
   } catch (err) {
     const detail = err instanceof GeminiError ? err.message : 'The model could not be reached.';
@@ -334,66 +347,84 @@ export async function askForView(ws: string, rawQuestion: string): Promise<AskRe
     };
   }
 
-  const status = geminiStatus();
-  if (!status.configured) {
-    return {
-      ok: false,
-      error: 'No model is configured on this server, so questions cannot be turned '
-        + 'into views. The facet rail in the library does the same job by hand.',
-    };
-  }
-
-  const budget = await checkBudget();
-  if (!budget.allowed) {
-    return {
-      ok: false,
-      error: budget.reason
-        ?? `That is ${budget.viewerLimit} model calls today, which is this demo's limit.`,
-    };
-  }
-
   const repo = getRepository();
-  const tags = await repo.listTags(ctx);
+  const key = planKey(ctx.workspace.id, question);
+  const remembered = recallAnswer(key);
 
-  /* The vocabulary offered is THIS workspace's, so a question can never be
-     answered with a tag the asker has no grant to see. Ordered by how many
-     files carry each, because the prompt keeps only the head of each axis. */
-  const vocab: Vocabulary = {};
-  for (const tag of tags) {
-    const list = vocab[tag.kind] ?? (vocab[tag.kind] = []);
-    list.push({ name: tag.name, display: tag.displayName, count: tag.fileCount });
+  let plan: ViewPlan;
+
+  if (remembered?.kind === 'plan') {
+    // Asking the same question twice is one model call. It was two, which made
+    // the cheapest way to re-read an answer the most expensive thing the page
+    // could do.
+    plan = remembered.plan;
+  } else {
+    const status = geminiStatus();
+    if (!status.configured) {
+      return {
+        ok: false,
+        error: 'No model is configured on this server, so questions cannot be turned '
+          + 'into views. The facet rail in the library does the same job by hand.',
+      };
+    }
+
+    const budget = await checkBudget();
+    if (!budget.allowed) {
+      return {
+        ok: false,
+        error: budget.reason
+          ?? `That is ${budget.viewerLimit} model calls today, which is this demo's limit.`,
+      };
+    }
+
+    const tags = await repo.listTags(ctx);
+
+    /* The vocabulary offered is THIS workspace's, so a question can never be
+       answered with a tag the asker has no grant to see. Ordered by how many
+       files carry each, because the prompt keeps only the head of each axis. */
+    const vocab: Vocabulary = {};
+    for (const tag of tags) {
+      const list = vocab[tag.kind] ?? (vocab[tag.kind] = []);
+      list.push({ name: tag.name, display: tag.displayName, count: tag.fileCount });
+    }
+    for (const list of Object.values(vocab)) list.sort((a, b) => b.count - a.count);
+
+    try {
+      plan = await planView(question, vocab);
+      await spend();
+    } catch (err) {
+      const detail = err instanceof GeminiError ? err.message : 'The model could not be reached.';
+      return { ok: false, error: detail };
+    }
   }
-  for (const list of Object.values(vocab)) list.sort((a, b) => b.count - a.count);
 
-  try {
-    const plan = await planView(question, vocab);
-    await spend();
+  /* THE COUNT IS ARITHMETIC, and it is recounted even on a remembered plan.
+     The filter is what was remembered; the number is not, because a tag
+     accepted or corrected since would have changed it. Reading a listener a
+     count the screen no longer shows is the exact failure this whole split
+     exists to prevent. */
+  const tagFilter = Object.keys(plan.tags).length ? plan.tags : undefined;
+  const page = await repo.listFiles(ctx, {
+    tags: tagFilter,
+    q: plan.q,
+    limit: Number.MAX_SAFE_INTEGER,
+  });
+  const matches = page.files.length;
 
-    /* THE COUNT IS ARITHMETIC. The plan runs through the same repository the
-       facet rail uses, so the number shown is the number the library itself
-       would show -- not something the model reported. */
-    const tagFilter = Object.keys(plan.tags).length ? plan.tags : undefined;
-    const page = await repo.listFiles(ctx, {
-      tags: tagFilter,
-      q: plan.q,
-      limit: Number.MAX_SAFE_INTEGER,
-    });
+  // Re-remembered with the fresh count, so what is spoken is what is shown.
+  rememberAnswer(key, { kind: 'plan', question, plan, matches });
 
-    const sp = toSearchParams({ tags: tagFilter, q: plan.q });
-    const libraryHref = `/w/${ws}/library${sp.toString() ? `?${sp}` : ''}`;
-    sp.set('mode', plan.mode);
+  const sp = toSearchParams({ tags: tagFilter, q: plan.q });
+  const libraryHref = `/w/${ws}/library${sp.toString() ? `?${sp}` : ''}`;
+  sp.set('mode', plan.mode);
 
-    return {
-      ok: true,
-      plan,
-      matches: page.files.length,
-      href: `/w/${ws}/graph?${sp}`,
-      libraryHref,
-    };
-  } catch (err) {
-    const detail = err instanceof GeminiError ? err.message : 'The model could not be reached.';
-    return { ok: false, error: detail };
-  }
+  return {
+    ok: true,
+    plan,
+    matches,
+    href: `/w/${ws}/graph?${sp}`,
+    libraryHref,
+  };
 }
 
 export type { Candidate };

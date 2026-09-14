@@ -40,6 +40,7 @@ export function FileDetail({
   albums,
   canEdit,
   modelReady,
+  speechReady,
   onClose,
 }: {
   ws: string;
@@ -47,6 +48,7 @@ export function FileDetail({
   albums: AlbumMembership[];
   canEdit: boolean;
   modelReady: boolean;
+  speechReady: boolean;
   onClose: () => void;
 }) {
   const [pending, start] = useTransition();
@@ -187,7 +189,12 @@ export function FileDetail({
       {/* Below the tags, because the tags are the evidence both halves of it
           reason from, and above albums, because filing the file somewhere is
           the thing you do AFTER working out what it is. */}
-      <FileInsight ws={ws} fileId={file.id} canExplain={modelReady} />
+      <FileInsight
+        ws={ws}
+        fileId={file.id}
+        canExplain={modelReady}
+        canSpeak={speechReady}
+      />
 
       {canEdit && (
         <section className={s.section}>

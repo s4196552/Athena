@@ -264,6 +264,7 @@ export default async function LibraryPage({
             }))}
             canEdit={ctx.can('tag')}
             modelReady={geminiStatus().configured}
+            speechReady={elevenLabsStatus().configured}
           />
         )}
 

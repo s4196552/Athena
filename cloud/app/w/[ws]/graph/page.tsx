@@ -3,6 +3,7 @@ import { Suspense } from 'react';
 import { requireSession } from '@/lib/auth';
 import { getRepository } from '@/lib/data';
 import { workspaceContext } from '@/lib/data/context';
+import { elevenLabsStatus } from '@/lib/ai/elevenlabs';
 import { GraphClient } from './GraphClient';
 
 export const dynamic = 'force-dynamic';
@@ -33,6 +34,7 @@ export default async function GraphPage({
         ws={ws}
         fileRules={fileGroups?.rules ?? []}
         tagRules={tagGroups?.rules ?? []}
+        speechReady={elevenLabsStatus().configured}
       />
     </Suspense>
   );

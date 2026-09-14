@@ -9,7 +9,12 @@
  * Run with `npm run check:speech`.
  */
 
-import { speakableBrief, MAX_SPEECH_CHARS } from '../lib/speech/speakable.js';
+import {
+  speakableBrief,
+  speakableExplanation,
+  speakablePlan,
+  MAX_SPEECH_CHARS,
+} from '../lib/speech/speakable.js';
 
 let failed = 0;
 let passed = 0;
@@ -107,6 +112,151 @@ absent('run-on does not split a word', runOn.text, 'wor.');
 const empty = speakableBrief({ title: '', body: '' });
 check('empty is empty', empty.text, '');
 check('empty counts zero', empty.chars, 0);
+
+/* ---------------------------------------------------------------------------
+   THE AGENT'S ANSWERS.
+
+   Same class of bug as the brief's and the same reason a test is the only way
+   to see it: nothing here throws, nothing fails a type check, and the failure
+   is audible rather than visible. The one that matters most is the LAST test
+   in each block -- a reading that runs long must lose the evidence, never the
+   caveat, because a confident description of a file nobody opened is only safe
+   to hear while the part saying nobody opened it is still attached to it.
+ ------------------------------------------------------------------------- */
+
+const spokenFile = speakableExplanation(
+  { name: 'Q3_Report-final_v2.pdf', ext: 'pdf' },
+  {
+    summary: 'Appears to be a quarterly financial statement, one of eleven in this folder.',
+    reads: ['the word "Q3" in the name', 'the Finance folder', 'the label Invoice'],
+    unknowns: ['the figures themselves', 'who signed it'],
+    confidence: 'medium',
+  },
+);
+
+// A file name is written for a filesystem. Separators are not words.
+absent('no underscores survive', spokenFile.text, '_');
+absent('no hyphens survive in the name', spokenFile.text, '-final');
+contains('the name is spoken as words', spokenFile.text, 'Q3 Report final v2');
+
+/* The type leads and takes "the", never "a" -- the article an extension wants
+   depends on how it is pronounced (an SVG, a PDF, a MOV) and there is no rule
+   here that gets all three right. */
+contains('the type leads the name', spokenFile.text, 'About the PDF file Q3 Report');
+absent('and never guesses an article', spokenFile.text, ', a PDF');
+
+contains('the summary is read', spokenFile.text, 'quarterly financial statement');
+contains('the evidence is a semicolon list', spokenFile.text,
+  'It reads that from: the word "Q3" in the name; the Finance folder');
+contains('the limits are read', spokenFile.text,
+  'It cannot tell you, without opening the file itself: the figures themselves');
+// A byline on screen; a sentence in the ear.
+contains('confidence is spoken as a sentence', spokenFile.text, 'Confidence is medium:');
+
+/* An empty unknowns list must still produce the caveat. explain.ts defaults it,
+   but this module is the last thing between a model's omission and a listener,
+   so it does not rely on that. */
+const noUnknowns = speakableExplanation(
+  { name: 'notes.txt', ext: 'txt' },
+  { summary: 'A text file.', reads: [], unknowns: [], confidence: 'low' },
+);
+contains('an empty unknowns list still says the limit', noUnknowns.text,
+  'It cannot tell you anything that is actually inside the file.');
+
+// No summary is nothing to read, not a reading of the caveats alone.
+const noSummary = speakableExplanation(
+  { name: 'x.pdf', ext: 'pdf' },
+  { summary: '   ', reads: ['a'], unknowns: ['b'], confidence: 'high' },
+);
+check('an explanation with no summary is empty', noSummary.text, '');
+
+/* THE LOAD-BEARING ONE. Over the cap, the evidence goes and the caveat stays. */
+const longOne = speakableExplanation(
+  { name: 'big.pdf', ext: 'pdf' },
+  {
+    summary: `${'This is a long hedged sentence about the file. '.repeat(37)}`,
+    reads: [`${'a piece of evidence '.repeat(20)}`, `${'another one '.repeat(20)}`],
+    unknowns: ['what is actually inside it'],
+    confidence: 'low',
+  },
+);
+check('a long explanation stays within the cap', longOne.chars <= MAX_SPEECH_CHARS, true);
+check('and says so', longOne.truncated, true);
+contains('the caveat survives the cap', longOne.text, 'what is actually inside it');
+contains('and so does the confidence', longOne.text, 'Confidence is low');
+absent('the evidence is what was dropped', longOne.text, 'a piece of evidence');
+
+/* An underscore is a word boundary a filesystem forced someone to spell
+   differently, and it turns up INSIDE the model's own sentences -- a folder
+   quoted in a summary, a file name quoted in the evidence. Read literally it
+   is "art underscore assets", which is nobody's sentence. */
+const pathy = speakableExplanation(
+  { name: 'echowraith_palette_050.psd', ext: 'psd' },
+  {
+    summary: "Filed under Art_Assets/EchoWraith/Materials/.",
+    reads: ["folder 'Art_Assets/EchoWraith'"],
+    unknowns: ['the layer structure'],
+    confidence: 'medium',
+  },
+);
+absent('no underscore is ever spoken', pathy.text, '_');
+contains('a path keeps its slashes, which do read', pathy.text, 'Art Assets/EchoWraith');
+
+/* ---- view plans ---- */
+
+const label = (kind: string) => ({ topic: 'Topic', date: 'Year' }[kind] ?? kind);
+
+const spokenPlan = speakablePlan(
+  {
+    mode: 'tags',
+    tags: { topic: ['finance', 'legal'], date: ['2024'] },
+    q: 'elephant',
+    title: 'Where finance and legal meet',
+    why: 'A tag graph shows which labels files carry together.',
+    dropped: [{ axis: 'topic', name: 'purple' }],
+  },
+  1234,
+  label,
+);
+
+contains('the plan opens with its title', spokenPlan.text, 'Showing: Where finance and legal meet.');
+/* THE COUNT IS ARITHMETIC and is spoken as a grouped number -- "one thousand
+   two hundred and thirty four" is what a synthesiser makes of 1,234, and that
+   is the right reading. */
+contains('the count is read', spokenPlan.text, '1,234 files match.');
+contains('the axes are named in words', spokenPlan.text, 'Filtered to topic finance or legal');
+contains('and joined so two axes do not run together', spokenPlan.text, ', and year 2024');
+contains('a name search is spoken as one', spokenPlan.text, 'names containing "elephant"');
+contains('the drawing is described, not named', spokenPlan.text, 'a web of labels');
+absent('the mode is not read as a bare word', spokenPlan.text, 'mode tags');
+contains('the reason is read', spokenPlan.text, 'A tag graph shows which labels');
+contains('and what it ignored is read', spokenPlan.text,
+  'It ignored "purple": there is no such label in this library');
+
+const onePlan = speakablePlan(
+  { mode: 'files', tags: {}, title: 'Everything', why: '', dropped: [] },
+  1,
+  label,
+);
+check('one match is singular', onePlan.text.includes('One file matches.'), true);
+contains('an empty filter says so', onePlan.text, 'Nothing is filtered out');
+
+/* The same guarantee as the explanation: the model's reason is the droppable
+   half, and the ignored terms are not. */
+const longPlan = speakablePlan(
+  {
+    mode: 'pyramid',
+    tags: { topic: ['finance'] },
+    title: 'A plan',
+    why: `${'This is the reason the model gave. '.repeat(60)}`,
+    dropped: [{ axis: 'topic', name: 'purple' }],
+  },
+  9,
+  label,
+);
+check('a long plan stays within the cap', longPlan.chars <= MAX_SPEECH_CHARS, true);
+contains('what it ignored survives the cap', longPlan.text, 'It ignored "purple"');
+absent('the reason is what was dropped', longPlan.text, 'This is the reason the model gave');
 
 console.log(`${passed} passed, ${failed} failed`);
 process.exit(failed ? 1 : 0);

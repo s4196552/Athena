@@ -17,6 +17,32 @@ import type { FileRecord, TagId } from './types';
  * fix is to stop doing that rather than to correct the third copy.
  */
 
+/* The same lens, reduced to the ids.
+ *
+ * `lensedTags` is for rendering and needs a tag table to resolve names; this
+ * is for the callers that only need to know WHICH tags -- the similarity
+ * measure, the agent's prompts, and the cache key that decides whether a
+ * remembered explanation still describes what this viewer is looking at. They
+ * must all agree with each other, and with `lensedTags`, or a remembered
+ * answer keyed one way is looked up the other and never found.
+ *
+ * The Set is not decoration. A workspace can accept a suggestion for a tag the
+ * catalogue already carries, and without the dedupe that tag would appear
+ * twice in the vector findRelated builds -- silently counting one label as two
+ * pieces of evidence.
+ */
+export function lensTagIds(
+  ctx: WorkspaceContext,
+  f: { id: FileRecord['id']; tags: TagId[]; userTags?: { workspaceId: string; tagId: TagId }[] },
+): TagId[] {
+  const own = (f.userTags ?? [])
+    .filter((u) => u.workspaceId === ctx.workspace.id)
+    .map((u) => u.tagId);
+  const added = [...(ctx.addedTags?.(f.id) ?? [])] as TagId[];
+  return [...new Set<TagId>([...f.tags, ...own, ...added])]
+    .filter((id) => !ctx.isRemoved(f.id, id));
+}
+
 export interface LensedTag {
   id: number;
   kind: string;

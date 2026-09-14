@@ -6,6 +6,7 @@ import { getRepository } from '@/lib/data';
 import { buildQueue } from '@/lib/agent/queue';
 import { findRepeats } from '@/lib/agent/related';
 import { geminiStatus } from '@/lib/ai/gemini';
+import { elevenLabsStatus } from '@/lib/ai/elevenlabs';
 import { PER_VIEWER_DAILY } from '@/lib/brief/budget';
 import { formatBytes, formatNumber } from '@/lib/format';
 import { Icon } from '@/lib/icons';
@@ -134,7 +135,7 @@ export default async function AgentPage({
         </div>
       </div>
 
-      <AskBox ws={ws} ready={model.configured} />
+      <AskBox ws={ws} ready={model.configured} canSpeak={elevenLabsStatus().configured} />
 
       <section className={s.note}>
         <p>

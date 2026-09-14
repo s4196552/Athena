@@ -1,0 +1,43 @@
+/* The Listen control, in the three panels that use it.
+   Lifted out of brief.module.css when the agent's answers became speakable
+   too: a control that appears in the summary sheet, the file detail panel and
+   the graph rail should not be styled by whichever of them happened to have
+   it first.
+
+   A row rather than a bare button, because the truncation note and any error
+   belong beside the control that produced them rather than in a corner of
+   whatever panel it was dropped into. */
+.listenRow {
+  display: flex; align-items: center; gap: var(--space-2);
+  flex-wrap: wrap;
+  margin: 0 0 var(--space-4);
+}
+
+/* In the file panel and the graph rail it closes a block rather than opening
+   one, so the margin goes above it instead of below. */
+.listenRow.after { margin: var(--space-3) 0 0; }
+
+.listen {
+  display: inline-flex; align-items: center; gap: var(--space-1);
+  min-height: var(--control-sm);
+  font: inherit; font-size: var(--fs-footnote); font-weight: 500;
+  color: var(--text); background: var(--bg-sunk);
+  border: 1px solid var(--line); border-radius: var(--r-pill);
+  padding: var(--space-1) var(--space-3);
+  cursor: pointer;
+}
+.listen:hover:not(:disabled) { border-color: var(--accent); color: var(--accent-text); }
+.listen:active:not(:disabled) { transform: translateY(1px); }
+.listen:disabled { opacity: .6; cursor: default; }
+/* Playing is a state, and states get more than a colour: the label reads
+   "Stop", the glyph is a stop square, and the fill inverts. */
+.listen[aria-pressed='true'] {
+  color: var(--on-accent); background: var(--accent-fill); border-color: var(--accent);
+}
+
+.listenNote { font-size: var(--fs-caption); color: var(--faint); }
+
+.listenError {
+  font-size: var(--fs-caption); line-height: 1.5; color: var(--danger);
+  flex: 1 1 100%;
+}

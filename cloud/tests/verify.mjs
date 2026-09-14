@@ -707,6 +707,132 @@ section('reading a brief aloud');
 
 
 // ===========================================================================
+section("reading the agent's answers aloud");
+// ===========================================================================
+{
+  const src = (...parts) => readFileSync(join(here, '..', ...parts), 'utf8');
+
+  /* THE INVARIANT THIS FEATURE STANDS ON, asserted against the source because
+     it cannot be observed from outside: listening never spends a model call.
+     The brief is REBUILT, which is free; the agent's two answers can only be
+     RECALLED, because they came out of a model and re-running one would bill
+     for prose already on the screen and could read the person different words
+     than the ones they are looking at. If this route ever imports the model,
+     that promise is gone and nothing else here would notice. */
+  const route = src('app', 'api', 'w', '[ws]', 'speak', 'route.ts');
+  check('listening can recall an agent answer', route.includes('recallAnswer'));
+  check('and can never generate one',
+    !/from '@\/lib\/agent\/(explain|view)'/.test(route)
+    && !/from '@\/lib\/ai\/gemini'/.test(route),
+    'the speech route imports no model');
+  check('the brief is still rebuilt rather than recalled',
+    route.includes("model: 'cached-only'"),
+    'arithmetic is free to repeat; a model call is not');
+
+  /* No variant of the subject type carries text. This is the client half of
+     "the caller does not supply the text" -- the route strips unknown fields
+     anyway, but a type with no text-shaped field in it is the version a future
+     edit cannot quietly undo. */
+  const button = src('components', 'speech', 'ListenButton.tsx');
+  for (const shape of ["kind: 'brief'; query: string", "kind: 'explain'; fileId: string",
+    "kind: 'plan'; question: string"]) {
+    check(`the speech subject can name the ${shape.split("'")[1]} kind`, button.includes(shape));
+  }
+  check('and no variant of it carries text to be spoken',
+    !/kind: '[a-z]+'; (text|body|speech|content):/.test(button));
+
+  /* An answer is remembered where it is produced, which is also what makes
+     asking the same thing twice cost once. Both verbs, because only one of
+     them having it would be the harder bug to find. */
+  const actions = src('app', 'w', '[ws]', 'agent', 'actions.ts');
+  check('an explanation is remembered when it is produced',
+    /rememberAnswer\(key, \{ kind: 'explain'/.test(actions));
+  check('and a view plan is too',
+    /rememberAnswer\(key, \{ kind: 'plan'/.test(actions));
+
+  const recallAt = actions.indexOf('recallAnswer(key)');
+  check('a remembered explanation is returned before any budget is spent',
+    recallAt > 0 && recallAt < actions.indexOf('await checkBudget()', recallAt),
+    'a remembered answer costs nothing, so a budget must not refuse it');
+
+  /* The count is recounted even on a remembered plan: the filter is what was
+     remembered, the number is not, and a tag corrected since would change it.
+     Reading a listener a count the screen no longer shows is the exact failure
+     the whole model/arithmetic split exists to prevent. */
+  check('a remembered plan is recounted before it is shown or spoken',
+    actions.indexOf('const matches = page.files.length')
+      > actions.indexOf('plan = remembered.plan'),
+    'the filter is remembered; the number is recomputed');
+
+  /* One lens implementation, because the recall key is built from it in two
+     places -- the action that writes the answer and the route that reads it
+     back. Two hand-written copies differing by a dedupe would simply never
+     find each other, and the symptom would be a Listen button that always
+     says "ask again". */
+  check('both halves of the recall key use one lens',
+    actions.includes("from '@/lib/data/lens'") && route.includes("from '@/lib/data/lens'"));
+
+  const speakAgent = (ws, cookie, body) => fetch(`${BASE}/api/w/${ws}/speak`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...(cookie ? { cookie } : {}) },
+    body: JSON.stringify(body),
+    redirect: 'manual',
+  });
+
+  const health = await json('/api/health');
+  const configured = health.data.speech?.configured === true;
+
+  if (configured) {
+    const unknown = await speakAgent('hadesmedia-ops', iris, { kind: 'sing' });
+    check('an unknown kind is refused', unknown.status === 400, `status ${unknown.status}`);
+
+    const noFile = await speakAgent('hadesmedia-ops', iris, { kind: 'explain' });
+    check('explaining nothing is refused', noFile.status === 400, `status ${noFile.status}`);
+
+    const noQuestion = await speakAgent('hadesmedia-ops', iris, { kind: 'plan', question: '  ' });
+    check('a blank question is refused', noQuestion.status === 400, `status ${noQuestion.status}`);
+
+    /* Nothing has been asked on this server, so nothing is remembered -- and
+       the answer must be "ask again", never a fresh model call. 409 rather
+       than 500: the words are not missing so much as no longer current here,
+       which is an ordinary Tuesday on a platform that starts lambdas freely. */
+    const cold = await speakAgent('hadesmedia-ops', iris, {
+      kind: 'plan', question: 'nobody has asked this on this server',
+    });
+    const coldBody = await cold.json().catch(() => ({}));
+    check('an answer this server never heard is refused, not regenerated',
+      cold.status === 409, `status ${cold.status}`);
+    check('and the refusal says asking again is the fix',
+      /ask again/i.test(coldBody.error ?? ''), (coldBody.error ?? '').slice(0, 80));
+    check('and says listening never re-runs the model on its own',
+      /never re-runs the model/i.test(coldBody.error ?? ''));
+
+    // A file id the caller cannot see resolves to nothing here exactly as it
+    // does on every other read, and before anything is remembered or spoken.
+    const foreign = await speakAgent('hadesmedia-ops', iris, {
+      kind: 'explain', fileId: 'file_does_not_exist',
+    });
+    check('an unknown file is not found rather than described',
+      foreign.status === 404, `status ${foreign.status}`);
+  } else {
+    /* Not skipped quietly. The key-dependent half of this feature is
+       unexercised on a server with no key, and saying so is the difference
+       between a suite that passed and a suite that checked. */
+    check('no speech key, so the agent-speech requests are not exercised', true,
+      'set ELEVENLABS_API_KEY and re-run to cover kind and recall handling');
+  }
+
+  /* The control appears only next to an answer, in all three places. When no
+     key is configured it is absent rather than present and failing, which is
+     the same shape every other optional-service control takes here. */
+  const agentPage = await get('/w/hadesmedia-ops/agent', iris);
+  check('the agent page draws no Listen control before anything is asked',
+    !agentPage.body.includes('>Read it out<'),
+    'audio is never the only copy of an answer, so it needs an answer first');
+}
+
+
+// ===========================================================================
 section('the agent: ask, explain, relate');
 // ===========================================================================
 {

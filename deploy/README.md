@@ -217,13 +217,33 @@ one where the model is working.
 string, presence-only reporting at `GET /api/health` under `speech`. Two things
 differ, and both are deliberate.
 
-**The caller does not supply the text.** `POST /api/w/[ws]/speak` takes the same
-filter string the library page is already using and rebuilds the brief from the
-catalogue. An endpoint that speaks whatever it is posted is a free
-text-to-speech service for anyone who can reach the login screen, billed to one
-shared key — and a per-call length cap does not fix that, because the abuse is
-unlimited *calls* of legal length. Rebuilding costs nothing: the brief is
-produced in `cached-only` mode, which never spends a model call.
+**The caller does not supply the text.** `POST /api/w/[ws]/speak` takes a
+*reference* and never a string to be read. An endpoint that speaks whatever it
+is posted is a free text-to-speech service for anyone who can reach the login
+screen, billed to one shared key — and a per-call length cap does not fix that,
+because the abuse is unlimited *calls* of legal length.
+
+Three things can be read aloud, and they satisfy that rule two different ways:
+
+| `kind` | The reference | How the server gets the words |
+|---|---|---|
+| `brief` | a filter string | **rebuilt** from the catalogue, in `cached-only` mode |
+| `explain` | a file id | **recalled** — it came from a model call |
+| `plan` | a question | **recalled**, the same way |
+
+The brief is arithmetic, so rebuilding it is free and produces the same words.
+The agent's two answers are not: there is no way to obtain them again except to
+ask the model again, which would bill for prose already rendered on the screen
+and could read the person *different words* than the ones they are looking at.
+So they are remembered where they are produced (`lib/agent/recall.ts`) and the
+speech route replays them or refuses with a 409 that says to ask again.
+`tests/verify.mjs` asserts the speech route imports no model, because that
+promise is invisible from outside and nothing else would catch its loss.
+
+The same memory is why asking one question twice — from a browser, from the
+CLI, or one of each — costs one model call rather than two. All four places
+that produce an agent answer write into it: both server actions and both `/api/v1`
+routes.
 
 **The budget counts characters, not calls** (`lib/speech/budget.ts`), because
 that is the unit ElevenLabs bills. Counting calls would price a forty-character
@@ -244,7 +264,7 @@ npm run seed            # regenerate the committed catalogue (deterministic)
 npm run check:taxonomy  # fails if the TS taxonomy has drifted from the Python
 npm run check:pyramid   # the pyramid layout, checked without a browser
 npm run check:contrast  # every text pair against the WCAG ratio, both themes
-npm run check:speech    # the brief-to-speech translation, no key needed
+npm run check:speech    # brief, explanation and plan to speech, no key needed
 npm run check:related   # the two arithmetic agent verbs, against the real seed
 npm run build
 vercel deploy --prod

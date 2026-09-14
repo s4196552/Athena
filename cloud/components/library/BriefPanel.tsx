@@ -3,7 +3,7 @@
 import { useState, useTransition } from 'react';
 import { Icon } from '@/lib/icons';
 import { summarise } from '@/app/w/[ws]/summarise';
-import { ListenButton } from './ListenButton';
+import { ListenButton } from '@/components/speech/ListenButton';
 import type { BriefResult } from '@/lib/brief/types';
 import s from './brief.module.css';
 
@@ -68,7 +68,12 @@ export function BriefPanel({
                 // Keyed on the selection: a different filter is a different
                 // recording, and remounting discards the old blob and every
                 // piece of state that described it in one step.
-                <ListenButton key={query} ws={ws} query={query} ready={speechReady} />
+                <ListenButton
+                  key={query}
+                  ws={ws}
+                  subject={{ kind: 'brief', query }}
+                  ready={speechReady}
+                />
               )}
 
               {brief.intro && <p className={s.intro}>{brief.intro}</p>}

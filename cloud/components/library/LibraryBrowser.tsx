@@ -58,6 +58,7 @@ export function LibraryBrowser({
   albums,
   canEdit,
   modelReady,
+  speechReady,
 }: {
   files: FileView[];
   accent: string;
@@ -68,6 +69,9 @@ export function LibraryBrowser({
    *  agent" control is absent when it could not work, rather than present and
    *  failing on the first press. */
   modelReady: boolean;
+  /** Whether this server has a speech key, on the same terms: the Listen
+   *  control under an explanation is absent rather than present and failing. */
+  speechReady: boolean;
 }) {
   const [mode, setMode] = useLocalSetting<ViewMode>('athena:view', 'auto');
   const [size, setSize] = useLocalSetting<number>('athena:tile', 2);
@@ -269,6 +273,7 @@ export function LibraryBrowser({
           albums={albums}
           canEdit={canEdit}
           modelReady={modelReady}
+          speechReady={speechReady}
           onClose={() => setOpen(null)}
         />
       )}

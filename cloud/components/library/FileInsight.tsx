@@ -4,6 +4,7 @@ import { useEffect, useState, useTransition } from 'react';
 import Link from 'next/link';
 import { Icon } from '@/lib/icons';
 import { explainFile, relatedFiles } from '@/app/w/[ws]/agent/actions';
+import { ListenButton } from '@/components/speech/ListenButton';
 import type { Explanation } from '@/lib/agent/explain';
 import type { Relation } from '@/lib/agent/related';
 import s from './detail.module.css';
@@ -30,6 +31,10 @@ interface Props {
   /** False when no model is configured; the Explain button is then absent
    *  rather than present and failing. */
   canExplain: boolean;
+  /** False when no speech key is configured. Listening is offered only once
+   *  there is an answer to listen to, so this gates a control that does not
+   *  exist yet when the panel opens. */
+  canSpeak: boolean;
 }
 
 const CONFIDENCE_LABEL: Record<Explanation['confidence'], string> = {
@@ -38,7 +43,7 @@ const CONFIDENCE_LABEL: Record<Explanation['confidence'], string> = {
   low: 'A reading of a generic name',
 };
 
-export function FileInsight({ ws, fileId, canExplain }: Props) {
+export function FileInsight({ ws, fileId, canExplain, canSpeak }: Props) {
   const [related, setRelated] = useState<Relation[] | null>(null);
   const [relatedError, setRelatedError] = useState<string | null>(null);
   const [explanation, setExplanation] = useState<Explanation | null>(null);
@@ -132,6 +137,23 @@ export function FileInsight({ ws, fileId, canExplain }: Props) {
             <p className={s.insightBy}>
               {CONFIDENCE_LABEL[explanation.confidence]} · {explanation.model}
             </p>
+
+            {/* Last, because here the answer comes first -- unlike the brief,
+                where the control sits above a sheet of text that would push it
+                off screen. The reading includes the caveats above it: speech
+                that delivered a confident description of a file nobody opened
+                and stopped before the part saying nobody opened it would be
+                worse than the panel it is reading from.
+
+                Keyed on the summary, so a re-asked explanation cannot be
+                answered with the recording of the previous one. */}
+            <ListenButton
+              key={explanation.summary}
+              ws={ws}
+              subject={{ kind: 'explain', fileId }}
+              ready={canSpeak}
+              trailing
+            />
           </div>
         )}
       </section>
