@@ -5,38 +5,14 @@ import { useLocalSetting } from '@/lib/useLocalSetting';
 import { formatBytes, formatDate, formatNumber } from '@/lib/format';
 import { Icon, TagIcon, iconForMedia } from '@/lib/icons';
 import { FileDetail, type AlbumMembership } from './FileDetail';
+import type { FileView, TagView } from '@/lib/data/view';
 import s from './browser.module.css';
 
-/** One tag as the browser needs it: resolved to a display string, but keeping
- *  kind and name because the icon lookup is keyed on `kind:name`. */
-export interface TagView {
-  id: number;
-  kind: string;
-  name: string;
-  display: string;
-  /** True for this workspace's own tags (asset_tag.source = 'user'). */
-  user?: boolean;
-}
-
-/** Everything the browser needs, flattened server-side. Deliberately not the
- *  full FileRecord: shipping tag ids would mean shipping the tag table too. */
-export interface FileView {
-  id: string;
-  name: string;
-  relPath: string;
-  parentRel: string;
-  ext: string;
-  sizeBytes: number;
-  mtime: number;
-  mediaType: 'image' | 'video' | 'audio' | 'document' | 'other';
-  /** Resolved doctype display, e.g. "Invoice". */
-  kindLabel: string;
-  /** Tags this workspace currently counts. */
-  tags: TagView[];
-  /** Tags this workspace has removed. Still in the catalogue, not counted here. */
-  removed: TagView[];
-  tintHex?: string;
-}
+/* FileView and TagView are defined in lib/data/view.ts and re-exported here,
+   so every existing import of them keeps working. They moved when the graph
+   needed the same panel: a server module cannot import a type out of a client
+   component without dragging the component along behind it. */
+export type { FileView, TagView };
 
 type ViewMode = 'auto' | 'grid' | 'list';
 
@@ -53,7 +29,6 @@ const ROW_TAG_LIMIT = 3;
 
 export function LibraryBrowser({
   files,
-  accent,
   ws,
   albums,
   canEdit,
@@ -61,7 +36,6 @@ export function LibraryBrowser({
   speechReady,
 }: {
   files: FileView[];
-  accent: string;
   ws: string;
   albums: AlbumMembership[];
   canEdit: boolean;
@@ -142,7 +116,6 @@ export function LibraryBrowser({
             disabled={media.length === 0}
             onChange={(e) => setSize(Number(e.target.value))}
             aria-label="Thumbnail size"
-            style={{ accentColor: accent }}
           />
           <span className={s.sizeIconLarge} aria-hidden="true">▪</span>
         </label>
@@ -223,7 +196,6 @@ export function LibraryBrowser({
                             <span
                               key={t.id}
                               className={t.user ? s.userTag : s.machineTag}
-                              style={t.user ? { color: accent } : undefined}
                             >
                               <TagIcon kind={t.kind} name={t.name} size={11} />
                               {t.display}

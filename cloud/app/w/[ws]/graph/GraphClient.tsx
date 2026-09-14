@@ -4,6 +4,9 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { GraphCanvas, type GraphData } from '@/components/graph/GraphCanvas';
 import { GraphAsk } from './GraphAsk';
+import { FileDetail, type AlbumMembership } from '@/components/library/FileDetail';
+import { openFile } from '../actions';
+import type { FileView } from '@/lib/data/view';
 import { colorAll, usedRules, type TagTableEntry } from '@/lib/graph/colors';
 import { buildPyramid, type Pyramid } from '@/lib/graph/pyramid';
 import {
@@ -72,6 +75,15 @@ interface Props {
   /** Whether this server has a speech key, so the ask panel can offer to read
    *  its answer aloud. Absent rather than failing when it does not. */
   speechReady: boolean;
+  /** Whether this server has a model key, for the panel's "Ask the agent". */
+  modelReady: boolean;
+  /** Whether this viewer may correct a tag. The panel offers removal only when
+   *  they can, rather than offering it and refusing. */
+  canEdit: boolean;
+  /** This workspace's albums, so the panel can file a dot into one. Handed
+   *  down from the server rather than fetched with the file: there is no album
+   *  rail on this page, so the list cannot change under it. */
+  albums: AlbumMembership[];
 }
 
 type Mode = 'files' | 'tags' | 'pyramid';
@@ -90,7 +102,9 @@ const DEFAULT_SHAPE: PyramidShape = {
   pitch: PYRAMID_PITCH,
 };
 
-export function GraphClient({ ws, fileRules, tagRules, speechReady }: Props) {
+export function GraphClient({
+  ws, fileRules, tagRules, speechReady, modelReady, canEdit, albums,
+}: Props) {
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -126,6 +140,12 @@ export function GraphClient({ ws, fileRules, tagRules, speechReady }: Props) {
      because that is the only identity a drawn node carries -- see `groups`. */
   const [hoverGroup, setHoverGroup] = useState<string | null>(null);
   const [pickedGroup, setPickedGroup] = useState<string | null>(null);
+
+  /* The dot being inspected. Held as id + name + (once it lands) the full
+     record, so the panel can open on the click with a correct heading and fill
+     in underneath. */
+  const [opened, setOpened] = useState<{ id: string; name: string; file?: FileView } | null>(null);
+  const [openError, setOpenError] = useState<string | null>(null);
   const [params, setParams] = useState<SimParams>(DEFAULT_PARAMS);
   const [shape, setShape] = useState<PyramidShape>(DEFAULT_SHAPE);
   const [hover, setHover] = useState<number | null>(null);
@@ -379,11 +399,21 @@ export function GraphClient({ ws, fileRules, tagRules, speechReady }: Props) {
     [nodesOf, picked, hovered],
   );
 
+  /* Clicking a FILE opens the same panel the library opens, here, over the
+     drawing. It used to navigate to the library filtered by the file's name,
+     which answered a question nobody asked -- you clicked one dot and were
+     shown a list, on another page, having lost the cloud you were reading.
+     A dot in a graph is a thing, and clicking a thing should tell you what it
+     is.
+
+     Clicking a TAG still adds it to the filter, unchanged. That is not an
+     inconsistency: a tag node is not a thing you inspect, it is a way of
+     narrowing what is drawn, and it is what turns the graph from a picture
+     into a way of navigating. */
   const onSelect = useCallback((index: number) => {
     if (!payload) return;
+
     if (payload.mode !== 'files') {
-      // Clicking a tag adds it to the filter. That is what turns the graph
-      // from a picture into a way of navigating.
       const node = payload.nodes[index];
       const qs = new URLSearchParams(filterQuery);
       const existing = qs.get(node.kind)?.split(',').filter(Boolean) ?? [];
@@ -392,9 +422,28 @@ export function GraphClient({ ws, fileRules, tagRules, speechReady }: Props) {
         router.push(`/w/${ws}/graph?${qs}`);
       }
       return;
-    } else {
-      router.push(`/w/${ws}/library?q=${encodeURIComponent(payload.labels[index])}`);
     }
+
+    const id = payload.ids[index];
+    if (!id) return;
+
+    /* Opened optimistically with the name the drawing already holds, so the
+       panel appears on the click rather than after a round trip. The rest
+       arrives a moment later and replaces it. A spinner where the answer will
+       be is worse than a heading that is already correct. */
+    setOpened({ id, name: payload.labels[index] });
+    setOpenError(null);
+
+    openFile(ws, id)
+      .then((result) => {
+        // Ignore an answer for a dot that is no longer the open one: two quick
+        // clicks must not end with the first file's panel winning.
+        setOpened((current) => (current?.id === id && result.ok
+          ? { id, name: result.file.name, file: result.file }
+          : current));
+        if (!result.ok) setOpenError(result.error);
+      })
+      .catch(() => setOpenError('That file could not be read.'));
   }, [payload, filterQuery, router, ws]);
 
   const hint = useMemo(() => {
@@ -703,6 +752,34 @@ export function GraphClient({ ws, fileRules, tagRules, speechReady }: Props) {
                 ))
               : null}
       </ul>
+
+      {/* The panel is `position: fixed`, so it sits over the drawing without
+          the graph having to give up any width -- which matters here more than
+          in the library, because the canvas is the content. */}
+      {opened?.file && (
+        <FileDetail
+          key={opened.id}
+          ws={ws}
+          file={opened.file}
+          albums={albums}
+          canEdit={canEdit}
+          modelReady={modelReady}
+          speechReady={speechReady}
+          onClose={() => { setOpened(null); setOpenError(null); }}
+        />
+      )}
+
+      {/* Between the click and the record landing, and when it does not.
+          Announced, because the click that opened it was on a canvas and a
+          screen reader has nothing else to notice. */}
+      {opened && !opened.file && (
+        <div className={s.filePending} role="status">
+          {openError ? `${opened.name} — ${openError}` : `Opening ${opened.name}…`}
+          <button type="button" onClick={() => { setOpened(null); setOpenError(null); }}>
+            Close
+          </button>
+        </div>
+      )}
     </div>
   );
 }

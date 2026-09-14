@@ -31,10 +31,15 @@
 .chip svg { opacity: .75; }
 .chip:hover svg, .chipOn svg { opacity: 1; }
 .chip:hover { color: var(--text); border-color: var(--accent-dim); }
+/* The accent here is the BRAND's, not the workspace's, and that is a contrast
+   fix as much as a consistency one. These four pastels were chosen for a
+   dark-only app; against --on-accent they measure 1.46 to 2.11, where a label
+   on a fill needs 4.5. A selected chip was the least readable thing in the
+   app, and it is the control people press most. */
 .chipOn {
   color: var(--on-accent); font-weight: 500;
-  background: var(--ws-accent, var(--accent-fill));
-  border-color: var(--ws-accent, var(--accent));
+  background: var(--accent-fill);
+  border-color: var(--accent);
 }
 /* "Convey information with more than color alone" -- a filled chip and an
    unfilled one are the same shape to anyone who cannot tell the two colours
@@ -66,7 +71,7 @@
   display: inline-flex; align-items: center; gap: var(--space-1);
   font-size: var(--fs-footnote); padding: var(--space-1) var(--space-2) var(--space-1) var(--space-2); border-radius: 999px;
   text-decoration: none; color: var(--on-accent);
-  background: var(--ws-accent, var(--accent-fill));
+  background: var(--accent-fill);
 }
 
 .grid {
@@ -98,7 +103,7 @@
    machine's -- the same distinction asset_tag.source makes in the schema. */
 .userTag {
   font-size: var(--fs-caption); padding: 1px var(--space-2); border-radius: 999px;
-  color: var(--ws-accent, var(--accent-text));
+  color: var(--accent-text);
   border: 1px solid currentColor;
 }
 

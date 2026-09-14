@@ -32,10 +32,17 @@ export default async function WorkspaceLayout({
   }
 
   return (
-    // The accent is set once here and read by every descendant, so switching
-    // workspace visibly recolours the whole chrome. Sharing one library
-    // between two teams gets confusing fast without that cue.
-    <div className={s.shell} style={{ ['--ws-accent' as string]: ctx.workspace.accentHex }}>
+    /* The workspace's colour used to be set here as --ws-accent and read by
+       every control below, so switching workspace recoloured the whole chrome.
+       It no longer is. Those four colours were picked for a dark-only app, and
+       once there was a light theme they measured 1.4 to 2.1 against it -- on a
+       selected chip, a focus ring and a view toggle, which are controls rather
+       than decoration. Controls now take the one brand accent, which clears
+       its floor in both appearances.
+       The cue itself is not lost: the workspace colour is still the dot beside
+       its name in the switcher and the picker, where it sits next to the words
+       it is identifying rather than standing in for them. */
+    <div className={s.shell}>
       <TopBar
         user={session.user}
         workspace={ctx.workspace}

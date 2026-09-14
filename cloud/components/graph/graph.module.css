@@ -252,3 +252,27 @@
   margin: var(--space-2) 0 0;
   font-size: var(--fs-caption); line-height: 1.45; color: var(--warn);
 }
+
+/* The moment between clicking a dot and the file arriving, and the sentence
+   that replaces it if the file never does.
+
+   It sits where the panel will sit rather than in the middle of the canvas, so
+   the answer does not move once it lands. */
+.filePending {
+  position: fixed; top: calc(var(--topbar) + var(--space-4)); right: var(--space-4);
+  z-index: 41;
+  display: flex; align-items: center; gap: var(--space-3);
+  max-width: min(92vw, var(--detail-panel));
+  font-size: var(--fs-footnote); color: var(--label-2);
+  background: var(--bg-elevated);
+  border: 1px solid var(--line); border-radius: var(--r-md);
+  padding: var(--space-2) var(--space-3);
+  box-shadow: 0 10px 30px var(--shadow-color);
+}
+.filePending button {
+  flex: none; font: inherit; font-size: var(--fs-caption);
+  color: var(--label-2); background: none;
+  border: 1px solid var(--line); border-radius: var(--r-pill);
+  min-height: var(--control-sm); padding: 0 var(--space-2); cursor: pointer;
+}
+.filePending button:hover { color: var(--text); border-color: var(--accent); }

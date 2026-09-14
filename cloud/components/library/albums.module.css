@@ -37,7 +37,7 @@
 }
 .link:hover { color: var(--text); }
 .itemOn .link { color: var(--text); }
-.itemIcon { color: var(--ws-accent, var(--accent-text)); }
+.itemIcon { color: var(--accent-text); }
 .itemName { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .itemCount { color: var(--faint); font-size: var(--fs-caption); font-variant-numeric: tabular-nums; }
 
@@ -72,7 +72,7 @@
   border-radius: 6px; padding: var(--space-1) var(--space-2);
   color: var(--text); font: inherit; font-size: var(--fs-footnote);
 }
-.input:focus { border-color: var(--ws-accent, var(--accent)); }
+.input:focus { border-color: var(--accent); }
 
 .clear {
   display: inline-flex; align-items: center; gap: var(--space-1);

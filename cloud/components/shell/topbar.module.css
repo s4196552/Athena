@@ -13,8 +13,11 @@
 
 .brand { display: flex; align-items: center; flex: 0 0 auto; }
 .mark {
-  width: 22px; height: 22px; border-radius: 6px;
-  background: var(--brand-gradient);
+  /* The bust is portrait, so the box carries its ratio rather than a square
+     that would letterbox it. One asset, no raster fallback: it is flat vector
+     art and it has to stay crisp from 22px in the bar to a retina zoom. */
+  height: 22px; aspect-ratio: 857 / 1237; flex: 0 0 auto;
+  background: url('/logo.svg') center / contain no-repeat;
 }
 
 /* ---------- switcher ---------- */
@@ -86,7 +89,7 @@
   color: var(--text);
   background: var(--fill-2);
   font-weight: 600;
-  box-shadow: inset 0 -2px 0 var(--ws-accent, var(--accent));
+  box-shadow: inset 0 -2px 0 var(--accent);
 }
 
 .right { margin-left: auto; display: flex; align-items: center; gap: var(--space-3); flex: 0 0 auto; }

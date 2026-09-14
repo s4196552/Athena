@@ -17,12 +17,15 @@
   color: var(--muted); background: transparent; border: 0; cursor: pointer;
 }
 .mode:hover { color: var(--text); background: var(--fill-2); }
-.modeOn { color: var(--on-accent); background: var(--ws-accent, var(--accent-fill)); font-weight: 500; }
+.modeOn { color: var(--on-accent); background: var(--accent-fill); font-weight: 500; }
 
 /* The iCloud/Finder zoom control: a small square, a slider, a larger square.
    No numbers -- the sizes are a feel, not a measurement. */
 .sizer { display: inline-flex; align-items: center; gap: var(--space-2); }
-.sizer input { width: 116px; cursor: pointer; }
+/* The native slider's tint. It was set inline from the workspace's accent
+   colour, which put a 1.5:1 amber thumb on a light page; it is a control, so
+   it takes the one accent like every other control. */
+.sizer input { width: 116px; cursor: pointer; accent-color: var(--accent); }
 .sizer input:disabled { opacity: .35; cursor: default; }
 .sizeIcon { font-size: var(--fs-caption); color: var(--faint); line-height: 1; }
 .sizeIconLarge { font-size: var(--fs-callout); color: var(--faint); line-height: 1; }
@@ -54,7 +57,7 @@
   display: grid; place-items: center;
   margin-bottom: var(--space-2); padding: 0; cursor: pointer;
 }
-.thumbOn { border-color: var(--ws-accent, var(--accent)); box-shadow: 0 0 0 2px var(--accent-dim); }
+.thumbOn { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-dim); }
 
 /* The marker for "a tag was corrected here", so a correction is discoverable
    from the grid and not only from inside the panel that made it. */

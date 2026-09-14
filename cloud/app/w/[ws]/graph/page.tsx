@@ -4,6 +4,7 @@ import { requireSession } from '@/lib/auth';
 import { getRepository } from '@/lib/data';
 import { workspaceContext } from '@/lib/data/context';
 import { elevenLabsStatus } from '@/lib/ai/elevenlabs';
+import { geminiStatus } from '@/lib/ai/gemini';
 import { GraphClient } from './GraphClient';
 
 export const dynamic = 'force-dynamic';
@@ -35,6 +36,13 @@ export default async function GraphPage({
         fileRules={fileGroups?.rules ?? []}
         tagRules={tagGroups?.rules ?? []}
         speechReady={elevenLabsStatus().configured}
+        modelReady={geminiStatus().configured}
+        canEdit={ctx.can('tag')}
+        /* The album list is the server's, as it is in the library. There is no
+           album rail on this page, so it cannot change under the panel. */
+        albums={ctx.overlay.albums.map((a) => ({
+          id: a.id, name: a.name, fileIds: a.fileIds,
+        }))}
       />
     </Suspense>
   );

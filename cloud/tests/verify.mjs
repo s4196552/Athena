@@ -1150,6 +1150,58 @@ section('asking from inside the graph');
 
 
 // ===========================================================================
+section('selecting a file in the graph');
+// ===========================================================================
+{
+  /* Clicking a dot opens the library's own panel over the drawing. It used to
+     navigate to the library filtered by the file's NAME, which answered a
+     question nobody asked: you clicked one thing and were shown a list, on
+     another page, having lost the cloud you were reading. */
+  const src = (...parts) => readFileSync(join(here, '..', ...parts), 'utf8');
+  const client = src('app', 'w', '[ws]', 'graph', 'GraphClient.tsx');
+
+  check('the graph opens the same panel the library opens',
+    client.includes("from '@/components/library/FileDetail'"),
+    'one panel, not a second copy of it');
+  check('and fetches the file it was given', /openFile\(ws, id\)/.test(client));
+  check('and no longer navigates away from the drawing',
+    !/library\?q=\$\{encodeURIComponent\(payload\.labels/.test(client));
+  /* A tag node still adds itself to the filter. Not an inconsistency: a tag is
+     a way of narrowing what is drawn, not a thing to inspect. */
+  check('while a tag node still narrows the filter',
+    /qs\.set\(node\.kind/.test(client));
+
+  /* THE PANEL NEEDS AN ID, and the file graph is the only payload that carries
+     one. If `ids` were ever dropped -- it is the one field the drawing itself
+     does not use -- every dot would stop opening, and nothing else here would
+     notice. */
+  const files = await json('/api/w/hadesmedia-ops/graph?mode=files', iris);
+  const ids = files.data?.ids ?? [];
+  check('the file graph ships an id per node', Array.isArray(ids) && ids.length > 0,
+    `${ids.length} ids`);
+  check('and one per label, so the panel opens the dot that was clicked',
+    ids.length === (files.data?.labels?.length ?? -1),
+    `${ids.length} ids / ${files.data?.labels?.length} labels`);
+
+  /* And that id resolves, through the repository, for this member -- the same
+     boundary the panel's own read goes through. */
+  const one = await json(`/api/v1/w/hadesmedia-ops/files/${ids[0]}`, iris);
+  check('and an id from the drawing resolves to a real file',
+    one.status === 200 && typeof one.data?.file?.name === 'string',
+    one.data?.file?.name ?? `status ${one.status}`);
+
+  /* One mapper behind both panels. Two would be how the library and the graph
+     start disagreeing about what a file is -- one resolving the doctype, the
+     other showing a tag the workspace had already corrected away. */
+  const actions = src('app', 'w', '[ws]', 'actions.ts');
+  const libPage = src('app', 'w', '[ws]', 'library', 'page.tsx');
+  check('both panels are filled by one mapper',
+    actions.includes('toFileView') && libPage.includes('toFileView'),
+    'lib/data/view.ts');
+}
+
+
+// ===========================================================================
 section('the palette and the typeface');
 // ===========================================================================
 {
@@ -1200,6 +1252,32 @@ section('the palette and the typeface');
     offenders.length
       ? offenders.map((f) => f.split(/[\\/]/).pop()).join(', ')
       : 'links use --accent-text');
+
+  /* ONE accent on the controls.
+
+     Each workspace carries its own colour in data/seed/tenancy.json, and the
+     chrome used to be tinted with it through --ws-accent. Measured against the
+     palette that exists now, those four pastels are 1.46 to 2.11 with
+     --on-accent on top -- on a selected facet chip, the view toggle and the
+     focus ring, which are controls and not decoration. A control tinted from
+     seed data also cannot be checked by check:contrast, which reads the token
+     file; the failure would have been invisible to every gate in this repo.
+
+     So no stylesheet may reach for it. The workspace colour survives as the
+     DOT beside its name in the switcher and the picker, where it labels rather
+     than replaces the words. */
+  // `var(--ws-accent` rather than the bare name, so the comment in globals.css
+  // that explains why the variable was retired is not read as a use of it.
+  const tinted = sheets.filter((f) => /var\(\s*--ws-accent/.test(readFileSync(f, 'utf8')));
+  check('no stylesheet tints a control with the workspace colour',
+    tinted.length === 0,
+    tinted.length
+      ? tinted.map((f) => f.split(/[\\/]/).pop()).join(', ')
+      : 'controls take --accent, --accent-text and --accent-fill');
+
+  const shell = readFileSync(join(here, '..', 'app', 'w', '[ws]', 'layout.tsx'), 'utf8');
+  check('and the shell no longer sets it, so it is not a dead variable',
+    !/\['--ws-accent'/.test(shell));
 
   // The display face has to reach the cascade, not merely be imported.
   check('the display face is applied by one element rule',

@@ -7,7 +7,7 @@ import { parseFilterParams, toSearchParams, hasAnyFilter } from '@/lib/filter/pa
 import { PAGE_SIZE } from '@/lib/data/repository';
 import { formatCount, formatNumber } from '@/lib/format';
 import { library } from '@/lib/data/json/load';
-import { lensedTags } from '@/lib/data/lens';
+import { toFileView } from '@/lib/data/view';
 import { TagIcon, Icon } from '@/lib/icons';
 import { LibraryBrowser, type FileView } from '@/components/library/LibraryBrowser';
 import { AlbumRail, type AlbumView } from '@/components/library/AlbumRail';
@@ -18,11 +18,6 @@ import { SearchBox } from '@/components/library/SearchBox';
 import s from './library.module.css';
 
 export const dynamic = 'force-dynamic';
-
-const MEDIA_TINT: Record<string, string> = {
-  image: '#3d5a80', video: '#5c4b73', audio: '#3f6b5a',
-  document: '#6b5d3f', other: '#4a4a5e',
-};
 
 export default async function LibraryPage({
   params,
@@ -136,28 +131,11 @@ export default async function LibraryPage({
      `removed` is built from ctx.isRemoved rather than by diffing: the panel has
      to show a suppressed tag in order to offer the undo, and the repository
      has already dropped it from everything else. */
-  const views: FileView[] = page.files.map((f) => {
-    /* One lens, shared with /api/v1 -- see lib/data/lens.ts. This used to be
-       five lines here that forgot ctx.addedTags, so a tag accepted from the
-       agent was counted in the rail beside a file that did not show it. */
-    const { tags, removed } = lensedTags(ctx, f, tagById);
-
-    const doctype = tags.find((t) => t.kind === 'doctype');
-    return {
-      id: f.id,
-      name: f.name,
-      relPath: f.relPath,
-      parentRel: f.parentRel,
-      ext: f.ext,
-      sizeBytes: f.sizeBytes,
-      mtime: f.mtime,
-      mediaType: f.mediaType,
-      kindLabel: doctype?.display ?? f.mediaType,
-      tags,
-      removed,
-      tintHex: f.tintHex ?? MEDIA_TINT[f.mediaType],
-    };
-  });
+  /* One mapper, shared with the graph's panel and built on the one lens --
+     see lib/data/view.ts. This used to be twenty lines here that forgot
+     ctx.addedTags, so a tag accepted from the agent was counted in the rail
+     beside a file that did not show it. */
+  const views: FileView[] = page.files.map((f) => toFileView(ctx, f, tagById));
 
   return (
     <div className={s.layout}>
@@ -257,7 +235,6 @@ export default async function LibraryPage({
         ) : (
           <LibraryBrowser
             files={views}
-            accent={ctx.workspace.accentHex}
             ws={ws}
             albums={ctx.overlay.albums.map((a) => ({
               id: a.id, name: a.name, fileIds: a.fileIds,

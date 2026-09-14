@@ -7,6 +7,8 @@ import { writeOverlay } from '@/lib/overlay/store';
 import { newAlbumId } from '@/lib/overlay/codec';
 import { MAX_ALBUM_FILES, MAX_ALBUMS, MAX_REMOVALS } from '@/lib/overlay/types';
 import { getRepository } from '@/lib/data';
+import { library } from '@/lib/data/json/load';
+import { toFileView, type FileView } from '@/lib/data/view';
 import type { Overlay } from '@/lib/overlay/types';
 import type { FileId, TagId } from '@/lib/data/types';
 import type { WorkspaceContext } from '@/lib/data/repository';
@@ -34,12 +36,15 @@ import type { WorkspaceContext } from '@/lib/data/repository';
 
 export type ActionResult = { ok: true } | { ok: false; error: string };
 
-const DENIED: ActionResult = {
-  ok: false,
+/* Typed as the FAILURE shape rather than as ActionResult, so they are equally
+   usable by anything returning a richer success -- `openFile` below returns a
+   file on success and still refuses in the same words. */
+const DENIED = {
+  ok: false as const,
   error: 'You need contribute access in this workspace to change tags or albums.',
 };
-const GONE: ActionResult = { ok: false, error: 'That workspace is not available.' };
-const NO_FILE: ActionResult = { ok: false, error: 'That file is not in this workspace.' };
+const GONE = { ok: false as const, error: 'That workspace is not available.' };
+const NO_FILE = { ok: false as const, error: 'That file is not in this workspace.' };
 
 async function visibleFile(ctx: WorkspaceContext, id: string): Promise<FileId | null> {
   const file = await getRepository().getFile(ctx, id as FileId);
@@ -181,4 +186,44 @@ export async function toggleInAlbum(
     }
     album.fileIds.push(fileId);
   });
+}
+
+
+/* ---------------------------------------------------------------------------
+ *  Reading one file, for a panel that is not on the library page.
+ *
+ *  The library ships every file it lists already flattened, so its panel needs
+ *  no fetch. The graph cannot: it draws up to a few thousand dots and shipping
+ *  a full record for each so that one of them might be clicked would be paying
+ *  for the whole catalogue to answer a question about one file.
+ *
+ *  So the panel is the same component and the data arrives one file at a time.
+ *  Read-only, and the only thing in this file that writes nothing.
+ * ------------------------------------------------------------------------- */
+
+export type OpenFileResult =
+  | { ok: true; file: FileView }
+  | { ok: false; error: string };
+
+export async function openFile(ws: string, rawFileId: string): Promise<OpenFileResult> {
+  const session = await requireSession(`/w/${ws}/graph`);
+  const ctx = await workspaceContext(session.user.id, ws);
+  if (!ctx) return GONE;
+
+  /* Through the repository, so an id belonging to a library this workspace has
+     no grant on comes back null -- the same boundary `visibleFile` relies on,
+     and the reason a file id in a URL is not a way to read another tenant's
+     catalogue. */
+  const file = await getRepository().getFile(ctx, rawFileId as FileId);
+  if (!file) return NO_FILE;
+
+  /* The tag table for every library this workspace can see. Built per call
+     rather than cached: `library()` is already memoised by the JSON loader, so
+     this is a map build over data in memory, not a read. */
+  const tagById = new Map<number, { kind: string; name: string; displayName: string }>();
+  for (const id of new Set(ctx.grants.map((g) => g.libraryId))) {
+    for (const t of library(id).tags) tagById.set(t.id, t);
+  }
+
+  return { ok: true, file: toFileView(ctx, file, tagById) };
 }

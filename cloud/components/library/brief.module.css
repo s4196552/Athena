@@ -48,7 +48,7 @@
    is obvious at a glance which half was written and which was counted. */
 .intro {
   margin: 0 0 var(--space-3); font-size: var(--fs-callout); line-height: 1.65; color: var(--text);
-  border-left: 2px solid var(--ws-accent, var(--accent));
+  border-left: 2px solid var(--accent);
   padding-left: var(--space-3);
 }
 
@@ -58,7 +58,7 @@
   font-size: var(--fs-footnote); padding: 2px var(--space-2) 2px var(--space-2); border-radius: 999px;
   border: 1px solid var(--line); background: var(--bg-sunk); color: var(--muted);
 }
-.about { color: var(--ws-accent, var(--accent-text)); border-color: currentColor; }
+.about { color: var(--accent-text); border-color: currentColor; }
 
 .rule { border: 0; border-top: 1px solid var(--line-soft); margin: 0 0 var(--space-4); }
 
