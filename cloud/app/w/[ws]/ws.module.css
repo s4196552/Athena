@@ -82,4 +82,4 @@
   font-size: var(--fs-callout); font-weight: 500; text-decoration: none;
   border: 1px solid var(--line); color: var(--text); background: var(--bg-raised);
 }
-.btnPrimary { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+.btnPrimary { background: var(--accent-fill); border-color: var(--accent); color: var(--on-accent); }

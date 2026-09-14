@@ -13,7 +13,7 @@
   color: var(--muted); background: transparent; border: 0; cursor: pointer;
 }
 .mode:hover { color: var(--text); background: var(--fill-2); }
-.modeActive { color: var(--on-accent); background: var(--accent); font-weight: 500; }
+.modeActive { color: var(--on-accent); background: var(--accent-fill); font-weight: 500; }
 
 .search {
   padding: var(--space-2) var(--space-3); font: inherit; font-size: var(--fs-subhead);
@@ -75,7 +75,7 @@
 .sectHead { display: flex; align-items: baseline; gap: var(--space-2); }
 .sectHead .sectLabel { flex: 1; }
 .clearKey {
-  font: inherit; font-size: var(--fs-caption); color: var(--accent);
+  font: inherit; font-size: var(--fs-caption); color: var(--accent-text);
   background: none; border: 0; padding: 0 0 var(--space-2); cursor: pointer;
 }
 .clearKey:hover { text-decoration: underline; }
@@ -192,7 +192,7 @@
 .askBtn {
   display: inline-flex; align-items: center; justify-content: center;
   min-width: var(--control-sm); min-height: var(--control-sm);
-  color: var(--on-accent); background: var(--accent);
+  color: var(--on-accent); background: var(--accent-fill);
   border: 0; border-radius: 6px; cursor: pointer;
 }
 .askBtn:hover:not(:disabled) { filter: brightness(1.08); }
@@ -203,7 +203,7 @@
 .askExamples li + li { margin-top: 2px; }
 .askExamples button {
   font: inherit; font-size: var(--fs-caption); text-align: left;
-  color: var(--accent); background: none; border: 0; padding: 2px 0;
+  color: var(--accent-text); background: none; border: 0; padding: 2px 0;
   cursor: pointer; text-decoration: underline; text-underline-offset: 2px;
 }
 .askExamples button:hover { filter: brightness(1.15); }

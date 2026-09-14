@@ -33,7 +33,7 @@
 .chip:hover { color: var(--text); border-color: var(--accent-dim); }
 .chipOn {
   color: var(--on-accent); font-weight: 500;
-  background: var(--ws-accent, var(--accent));
+  background: var(--ws-accent, var(--accent-fill));
   border-color: var(--ws-accent, var(--accent));
 }
 /* "Convey information with more than color alone" -- a filled chip and an
@@ -66,7 +66,7 @@
   display: inline-flex; align-items: center; gap: var(--space-1);
   font-size: var(--fs-footnote); padding: var(--space-1) var(--space-2) var(--space-1) var(--space-2); border-radius: 999px;
   text-decoration: none; color: var(--on-accent);
-  background: var(--ws-accent, var(--accent));
+  background: var(--ws-accent, var(--accent-fill));
 }
 
 .grid {
@@ -98,7 +98,7 @@
    machine's -- the same distinction asset_tag.source makes in the schema. */
 .userTag {
   font-size: var(--fs-caption); padding: 1px var(--space-2); border-radius: 999px;
-  color: var(--ws-accent, var(--accent));
+  color: var(--ws-accent, var(--accent-text));
   border: 1px solid currentColor;
 }
 

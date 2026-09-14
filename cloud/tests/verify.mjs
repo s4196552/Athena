@@ -11,7 +11,7 @@
  * authentication to get at the pages behind it.
  */
 import { webcrypto as crypto } from 'node:crypto';
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -1020,6 +1020,73 @@ section('asking from inside the graph');
   check('and the drawing it asks for has something in it',
     api.status === 200 && (api.data?.nodes?.length ?? 0) > 0,
     `${api.data?.nodes?.length ?? 0} nodes`);
+}
+
+
+// ===========================================================================
+section('the palette and the typeface');
+// ===========================================================================
+{
+  const css = readFileSync(join(here, '..', 'app', 'globals.css'), 'utf8');
+  const token = (name) => (css.match(new RegExp(`--${name}:\\s*(#[0-9a-fA-F]{3,8})`)) ?? [])[1];
+
+  /* The requested colours, asserted to still BE the requested colours. Six of
+     the seven are used verbatim; the seventh, the brand red, is verbatim as a
+     mark and has two derived siblings for the jobs it cannot do. A later
+     "tidy-up" that nudges one of these hexes is exactly what this catches. */
+  const asked = {
+    'dark-label': '#FAF9F5',
+    'dark-label-3': '#9C9A92',
+    'dark-bg-base': '#141413',
+    'dark-bg-raised': '#1f1e1d',
+    'light-bg-base': '#F2F2F2',
+    'light-bg-sunk': '#f0f0ef',
+    'light-bg-raised': '#FAF9F5',
+    'light-label': '#1f1e1d',
+    'light-label-4': '#9C9A92',
+    'dark-accent': '#fe2231',
+    'light-accent': '#fe2231',
+  };
+  for (const [name, want] of Object.entries(asked)) {
+    check(`--${name} is the requested ${want}`,
+      (token(name) ?? '').toLowerCase() === want.toLowerCase(),
+      token(name) ?? 'missing');
+  }
+
+  /* The brand red cannot carry text in either appearance -- 4.35 on dark,
+     3.63 on light -- so nothing may set `color` to it. The two derived roles
+     exist precisely so the brand colour is never asked to. `border-color` and
+     `accent-color` are graphical and answer to 3:1, which it clears. */
+  const sheets = [];
+  const walk = (dir) => {
+    for (const entry of readdirSync(dir, { withFileTypes: true })) {
+      const p = join(dir, entry.name);
+      if (entry.isDirectory()) walk(p);
+      else if (entry.name.endsWith('.css')) sheets.push(p);
+    }
+  };
+  walk(join(here, '..', 'app'));
+  walk(join(here, '..', 'components'));
+
+  const bare = /(?<![-\w])color:\s*var\(--accent\)/;
+  const offenders = sheets.filter((f) => bare.test(readFileSync(f, 'utf8')));
+  check('nothing sets text colour to the brand red', offenders.length === 0,
+    offenders.length
+      ? offenders.map((f) => f.split(/[\\/]/).pop()).join(', ')
+      : 'links use --accent-text');
+
+  // The display face has to reach the cascade, not merely be imported.
+  check('the display face is applied by one element rule',
+    /h1,\s*h2\s*\{[^}]*--font-display/.test(css),
+    'so no component has to remember which family to ask for');
+  check('and falls back to a named serif rather than the generic one',
+    /--font-display:[^;]*Georgia/.test(css),
+    'generic serif resolves to Times on Windows and reads as a bug');
+
+  const home = await get('/');
+  check('both typefaces are self-hosted, so font-src can stay self',
+    !/fonts\.googleapis|fonts\.gstatic/.test(home.body),
+    'next/font downloads them at build time');
 }
 
 

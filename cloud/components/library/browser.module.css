@@ -17,7 +17,7 @@
   color: var(--muted); background: transparent; border: 0; cursor: pointer;
 }
 .mode:hover { color: var(--text); background: var(--fill-2); }
-.modeOn { color: var(--on-accent); background: var(--ws-accent, var(--accent)); font-weight: 500; }
+.modeOn { color: var(--on-accent); background: var(--ws-accent, var(--accent-fill)); font-weight: 500; }
 
 /* The iCloud/Finder zoom control: a small square, a slider, a larger square.
    No numbers -- the sizes are a feel, not a measurement. */

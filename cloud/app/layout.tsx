@@ -1,10 +1,21 @@
 import type { Metadata, Viewport } from 'next';
-import { Inter } from 'next/font/google';
+import { Inter, Playfair_Display } from 'next/font/google';
 import { readTheme } from '@/lib/theme/store';
 import './globals.css';
 
-/* One typeface, per "minimize the number of typefaces you use" -- hierarchy
- * comes from size, weight and tracking, which is how Apple builds it too.
+/* TWO typefaces, and the HIG's "minimize the number of typefaces you use" is
+ * worth answering rather than ignoring. Two is the minimum for a design with a
+ * serif identity, because the two are doing different jobs and neither can do
+ * the other's:
+ *
+ *   Playfair Display -- a Didone, with the extreme thick-to-thin contrast and
+ *   hairline serifs that give the name its character at 28px and above. Those
+ *   same hairlines disappear at 13px, which is most of this app.
+ *   Inter -- drawn for UI at small sizes, which is everything else.
+ *
+ * So the split is by SIZE, not by whim: display type down to --fs-title-2, UI
+ * and prose below it. One decision, applied in globals.css, rather than a
+ * choice made per component.
  *
  * Inter rather than the system stack, which would give SF Pro on a Mac and
  * Segoe UI Variable on Windows: two different designs for a page whose first
@@ -19,6 +30,15 @@ const inter = Inter({
   subsets: ['latin'],
   variable: '--font-inter',
   weight: ['400', '500', '600', '700'],
+  display: 'swap',
+});
+
+/* Weights 500-700 only. A Didone at 400 is already delicate, and the HIG rules
+ * out light weights outright; the display sizes here want the sturdier cuts. */
+const playfair = Playfair_Display({
+  subsets: ['latin'],
+  variable: '--font-playfair',
+  weight: ['500', '600', '700'],
   display: 'swap',
 });
 
@@ -60,7 +80,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   return (
     <html
       lang="en"
-      className={inter.variable}
+      className={`${inter.variable} ${playfair.variable}`}
       data-theme={theme === 'system' ? undefined : theme}
     >
       <body>

@@ -16,7 +16,7 @@
 
 .modeSwitch { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
 .modeOn, .modeOff { padding: var(--space-2) var(--space-4); font-size: var(--fs-subhead); text-decoration: none; }
-.modeOn { background: var(--accent); color: var(--on-accent); font-weight: 500; }
+.modeOn { background: var(--accent-fill); color: var(--on-accent); font-weight: 500; }
 .modeOff { color: var(--muted); }
 .modeOff:hover { background: var(--fill-2); color: var(--text); }
 
@@ -56,7 +56,7 @@
    removed, the only indication that it had keyboard focus was the text
    turning blue, which is invisible to anyone who cannot see that hue and
    ambiguous to everyone else. */
-.ruleLabel:focus { color: var(--accent); }
+.ruleLabel:focus { color: var(--accent-text); }
 .ruleQuery { font-size: var(--fs-caption); color: var(--faint); }
 .ruleCount { font-size: var(--fs-footnote); color: var(--muted); font-variant-numeric: tabular-nums; }
 .ruleActions { display: flex; gap: 2px; flex: 0 0 auto; }

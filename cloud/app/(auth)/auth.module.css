@@ -59,7 +59,7 @@
   font-size: var(--fs-callout);
   font-weight: 500;
   color: var(--on-accent);
-  background: var(--accent);
+  background: var(--accent-fill);
   border: 1px solid var(--accent);
   border-radius: 8px;
   cursor: pointer;

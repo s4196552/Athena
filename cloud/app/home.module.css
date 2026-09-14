@@ -21,7 +21,7 @@
   font-size: clamp(30px, 6vw, 46px); line-height: 1.12;
   letter-spacing: -0.025em; margin: 0 0 var(--space-4); font-weight: 700;
 }
-.h1 em { font-style: normal; color: var(--accent); }
+.h1 em { font-style: normal; color: var(--accent-text); }
 .lede { font-size: var(--fs-title-3); color: var(--muted); margin: 0 0 var(--space-6); max-width: var(--measure); }
 
 .cta { display: flex; flex-wrap: wrap; gap: var(--space-3); align-items: center; }
@@ -30,7 +30,7 @@
   text-decoration: none; font-size: var(--fs-callout); font-weight: 500;
   border: 1px solid var(--line);
 }
-.primary { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+.primary { background: var(--accent-fill); border-color: var(--accent); color: var(--on-accent); }
 .ghost { color: var(--text); background: var(--bg-raised); }
 
 /* ---------- the promise ---------- */
@@ -178,7 +178,7 @@
   font-weight: 700;
   font-variant-numeric: tabular-nums;
   color: var(--on-accent);
-  background: var(--accent);
+  background: var(--accent-fill);
 }
 
 .tryGo, .cardGo {
@@ -187,7 +187,7 @@
   min-height: var(--control-sm);
   font-size: var(--fs-subhead);
   font-weight: 500;
-  color: var(--accent);
+  color: var(--accent-text);
   text-decoration: none;
 }
 .tryGo:hover, .cardGo:hover { text-decoration: underline; }

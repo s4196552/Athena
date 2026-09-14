@@ -25,6 +25,10 @@ const TEXT = 4.5;
 /** Dark Mode asks for more of small text: "strive for 7:1, especially in small
  *  text". Applied to anything the type scale puts at 12px or below. */
 const SMALL = 7;
+/** "Meaningful graphical objects" -- icons, rules, focus rings, the brand
+ *  mark. The HIG's floor for something that carries meaning without carrying
+ *  words. */
+const GRAPHIC = 3;
 
 function tokens(): Map<string, string> {
   const found = new Map<string, string>();
@@ -82,14 +86,25 @@ for (const mode of ['dark', 'light'] as const) {
     check(`${mode}-label-2`, `${mode}-${surface}`, SMALL, 'small text: counts, metadata');
     // label-3 is banned below 13px by the token comments, so 4.5 is its bar.
     check(`${mode}-label-3`, `${mode}-${surface}`, TEXT, 'secondary text, 13px and up');
-    check(`${mode}-accent`, `${mode}-${surface}`, TEXT, 'links');
+    /* The BRAND red is checked at the 3:1 floor the HIG gives a meaningful
+       graphical object, because that is the only job it has: a logo mark, a
+       rule, a focus ring, the active edge of a control. It measures 4.35 on
+       dark and 3.63 on light, so it would fail as text -- which is why the
+       two roles below exist and why nothing in the app sets `color: var(--accent)`. */
+    check(`${mode}-accent`, `${mode}-${surface}`, GRAPHIC, 'the brand mark, never text');
+    check(`${mode}-accent-text`, `${mode}-${surface}`, TEXT, 'links and accent ink');
   }
 
   // The text drawn ON a filled control: selected chips, primary buttons, and
   // the destructive confirmation. Both flip with the appearance -- near-black
   // reads on the dark pink and white on the light one, and neither works for
   // both, which is why --on-danger exists at all.
-  check(`${mode}-on-accent`, `${mode}-accent`, TEXT, 'text on an accent fill');
+  /* Against --accent-FILL, not --accent. A label sitting on the brand red
+     clears only 4.35 at best in either appearance, so the filled controls use
+     a slightly deeper red that takes a foreground at 4.5. The brand colour is
+     unchanged; what changed is that it stopped being asked to do a job it
+     cannot do. */
+  check(`${mode}-on-accent`, `${mode}-accent-fill`, TEXT, 'text on an accent fill');
   check(`${mode}-on-danger`, `${mode}-danger`, TEXT, 'text on a danger fill');
 
   /* --label-4 is deliberately NOT checked as text. It is for disabled glyphs

@@ -38,38 +38,47 @@
 :root {
   /* ---------------- palette constants: dark ---------------- */
   /* Contrast against --dark-bg-base / raised / elevated / selected:
-       label    16.49  15.58  14.52  11.42
-       label-2  10.42   9.85   9.18   7.21
-       label-3   6.55   6.19   5.77   4.53
-       accent    6.75   6.38   5.95   4.67
-     label-4 is 3.85 on base and is therefore NOT a text colour -- see below. */
-  --dark-label:    #e9eef5;
-  --dark-label-2:  #b4c0ce;
-  --dark-label-3:  #8b98a8;
-  --dark-label-4:  #64717f;
-  --dark-bg-base:      #0b0f14;
-  --dark-bg-raised:    #11161d;
-  --dark-bg-elevated:  #171d26;
-  --dark-bg-sunk:      #070a0e;
-  --dark-separator:      #242c37;
-  --dark-separator-soft: #1b222b;
-  --dark-fill:    #1a2230;
-  --dark-fill-2:  #1f2836;
-  --dark-fill-3:  #253041;
-  --dark-fill-selected: #12314f;
-  --dark-accent:  #4c9aff;
-  --dark-on-accent: #06101f;
+       label    17.50  15.80  13.61  15.23
+       label-2  9.07  8.19  7.05  7.89
+       label-3  6.54  5.91  5.09  5.69
+       accent-text 5.81  5.24  4.52  5.06
+     label-4 is 3.07 on base and is therefore NOT a text colour.
+     --dark-accent is the BRAND red at 4.35 on raised: fine for a
+     mark, a rule or a focus ring, never for text. --dark-accent-text is the
+     same hue moved until it clears 4.5. */
+  --dark-label:    #FAF9F5;
+  --dark-label-2:  #b7b6b0;
+  --dark-label-3:  #9C9A92;
+  --dark-label-4:  #65635d;
+  --dark-bg-base:      #141413;
+  --dark-bg-raised:    #1f1e1d;
+  --dark-bg-elevated:  #2b2a28;
+  --dark-bg-sunk:      #0d0d0c;
+  --dark-separator:      #3a3936;
+  --dark-separator-soft: #2a2a27;
+  /* Hover and pressed surfaces. SOLVED rather than picked: they are the
+     furthest from the page background that still leaves every label level
+     legible on them, which in this palette is a much narrower band than the
+     old blue one allowed. Nudging them is what the contrast gate is for. */
+  --dark-fill:    #1f1f1d;
+  --dark-fill-2:  #252522;
+  --dark-fill-3:  #2b2a28;
+  --dark-fill-selected: #3f1215;
+  --dark-accent:  #fe2231;
+  --dark-accent-text: #fe535f;
+  --dark-accent-fill: #e60111;
+  --dark-on-accent: #FAF9F5;
   /* Canvas ink. A <canvas> has no cascade, so the graph's non-node colours
      have to be readable values rather than CSS rules; renderer.ts used to
      hard-code these, which is why the graph stayed dark when everything
      around it went light. */
-  --dark-canvas-edge:       rgba(120, 138, 160, 0.20);
-  --dark-canvas-edge-faint: rgba(120, 138, 160, 0.05);
-  --dark-canvas-edge-lit:   rgba(190, 210, 235, 0.45);
-  --dark-canvas-ring:       #e9eef5;
-  --dark-canvas-label:      rgba(230, 237, 243, 0.92);
-  --dark-canvas-band:       rgba(120, 138, 160, 0.062);
-  --dark-canvas-band-muted: rgba(120, 138, 160, 0.035);
+  --dark-canvas-edge:       rgba(168, 164, 152, 0.20);
+  --dark-canvas-edge-faint: rgba(168, 164, 152, 0.05);
+  --dark-canvas-edge-lit:   rgba(250, 249, 245, 0.45);
+  --dark-canvas-ring:       #FAF9F5;
+  --dark-canvas-label:      rgba(250, 249, 245, 0.92);
+  --dark-canvas-band:       rgba(168, 164, 152, 0.062);
+  --dark-canvas-band-muted: rgba(168, 164, 152, 0.035);
   --dark-canvas-band-label: rgba(150, 168, 190, 0.65);
 
   --dark-ok:      #3fb950;
@@ -81,35 +90,40 @@
   --dark-on-danger: #1a0c12;
 
   /* ---------------- palette constants: light ---------------- */
-  /* Contrast against --light-bg-base / raised / selected:
-       label    16.78  17.87  14.64
-       label-2   8.49   9.04   7.40
-       label-3   5.87   6.25   5.12
-       accent    5.31   5.65   4.63                                        */
-  --light-label:   #111820;
-  --light-label-2: #3f4a56;
-  --light-label-3: #55626f;
-  --light-label-4: #8a95a1;
-  --light-bg-base:     #f6f8fa;
-  --light-bg-raised:   #ffffff;
-  --light-bg-elevated: #ffffff;
-  --light-bg-sunk:     #eef1f5;
-  --light-separator:      #d7dde5;
-  --light-separator-soft: #e6eaf0;
-  --light-fill:   #eef1f5;
-  --light-fill-2: #e5eaf1;
-  --light-fill-3: #dbe2eb;
-  --light-fill-selected: #dbeafe;
-  --light-accent: #0a63d1;
-  --light-on-accent: #ffffff;
-  --light-canvas-edge:       rgba(58, 78, 103, 0.30);
-  --light-canvas-edge-faint: rgba(58, 78, 103, 0.09);
-  --light-canvas-edge-lit:   rgba(16, 42, 78, 0.55);
-  --light-canvas-ring:       #111820;
-  --light-canvas-label:      rgba(17, 24, 32, 0.92);
-  --light-canvas-band:       rgba(58, 78, 103, 0.075);
-  --light-canvas-band-muted: rgba(58, 78, 103, 0.04);
-  --light-canvas-band-label: rgba(58, 78, 103, 0.78);
+  /* Contrast against --light-bg-base / raised / sunk / selected:
+       label    14.87  15.80  14.60  15.89
+       label-2  7.20  7.65  7.07  7.70
+       label-3  4.63  4.92  4.55  4.95
+       accent-text 4.59  4.88  4.51  4.91
+     label-4 is 2.52 on base -- it is the requested #9C9A92, which
+     cannot carry text on a light ground, so here it is decoration only.
+     --light-accent is the BRAND red at 3.63 on raised: a mark, not text. */
+  --light-label:   #1f1e1d;
+  --light-label-2: #52504a;
+  --light-label-3: #6f6d65;
+  --light-label-4: #9C9A92;
+  --light-bg-base:     #F2F2F2;
+  --light-bg-raised:   #FAF9F5;
+  --light-bg-elevated: #FFFFFF;
+  --light-bg-sunk:     #f0f0ef;
+  --light-separator:      #dbdad6;
+  --light-separator-soft: #e9e9e7;
+  --light-fill:   #fbfbfa;
+  --light-fill-2: #f5f5f4;
+  --light-fill-3: #f0f0ee;
+  --light-fill-selected: #fff8f9;
+  --light-accent: #fe2231;
+  --light-accent-text: #dd0110;
+  --light-accent-fill: #ee0111;
+  --light-on-accent: #FFFFFF;
+  --light-canvas-edge:       rgba(92, 89, 82, 0.30);
+  --light-canvas-edge-faint: rgba(92, 89, 82, 0.09);
+  --light-canvas-edge-lit:   rgba(31, 30, 29, 0.55);
+  --light-canvas-ring:       #1f1e1d;
+  --light-canvas-label:      rgba(31, 30, 29, 0.92);
+  --light-canvas-band:       rgba(92, 89, 82, 0.075);
+  --light-canvas-band-muted: rgba(92, 89, 82, 0.04);
+  --light-canvas-band-label: rgba(92, 89, 82, 0.78);
 
   --light-ok:     #1a7f37;
   --light-warn:   #8a6100;
@@ -132,6 +146,12 @@
   --fill-3: var(--dark-fill-3);
   --fill-selected: var(--dark-fill-selected);
   --accent:    var(--dark-accent);
+  /* The brand red is a MARK, not a text colour: 4.35 on raised, under the
+     4.5 the HIG asks of text up to 17pt. These two are the same hue moved
+     until they clear it -- one for the accent used as ink, one for the accent
+     used as a fill that has to carry a label. */
+  --accent-text: var(--dark-accent-text);
+  --accent-fill: var(--dark-accent-fill);
   --on-accent: var(--dark-on-accent);
   --ok:     var(--dark-ok);
   --warn:   var(--dark-warn);
@@ -266,10 +286,19 @@
   /* The brand mark. Identical in both appearances by intent -- it is an
      identity, not chrome -- but it was written out verbatim in three separate
      stylesheets, and its purple appeared in no token at all. */
-  --brand-gradient: conic-gradient(from 210deg, #4c9aff, #a371f7, #3fb950, #4c9aff);
+  /* One hue, so the mark reads as the accent rather than as a second palette.
+     The old gradient carried a blue, a purple and a green that existed in no
+     token and survived three files by being copied. */
+  --brand-gradient: conic-gradient(from 210deg, #fe2231, #ff7a55, #b3000f, #fe2231);
 
   --font-sans: var(--font-inter), -apple-system, BlinkMacSystemFont, "Segoe UI",
     system-ui, sans-serif;
+  /* The display face, for the wordmark and anything at --fs-title-2 or above.
+     Georgia is the fallback rather than a generic `serif`, because the generic
+     resolves to Times on Windows -- a different enough colour on the page that
+     a failed font load would look like a bug rather than a substitution. */
+  --font-display: var(--font-playfair), Georgia, "Iowan Old Style",
+    "Palatino Linotype", serif;
   --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Consolas, monospace;
 }
 
@@ -291,6 +320,8 @@
   --fill-3: var(--light-fill-3);
   --fill-selected: var(--light-fill-selected);
   --accent:    var(--light-accent);
+  --accent-text: var(--light-accent-text);
+  --accent-fill: var(--light-accent-fill);
   --on-accent: var(--light-on-accent);
   --ok:     var(--light-ok);
   --warn:   var(--light-warn);
@@ -328,6 +359,8 @@
     --fill-3: var(--light-fill-3);
     --fill-selected: var(--light-fill-selected);
     --accent:    var(--light-accent);
+    --accent-text: var(--light-accent-text);
+    --accent-fill: var(--light-accent-fill);
     --on-accent: var(--light-on-accent);
     --ok:     var(--light-ok);
     --warn:   var(--light-warn);
@@ -364,7 +397,21 @@ html, body {
   -webkit-font-smoothing: antialiased;
 }
 
-a { color: var(--accent); }
+/* The display face, applied ONCE by element rather than per component.
+   h1 and h2 are the page and section titles; every component's own rule sets
+   size, weight and tracking on top of this and none of them has to remember
+   which family to ask for. h3 and below stay on Inter, where a Didone's
+   hairlines would start to disappear. */
+h1, h2 {
+  font-family: var(--font-display);
+  /* A Didone at display sizes wants to be set tighter than a UI face; the
+     scale's tracking tokens were chosen for Inter. */
+  letter-spacing: -0.015em;
+}
+
+/* --accent is the brand mark and does not clear 4.5:1 as text in either
+   appearance. Links use the text-safe member of the same hue. */
+a { color: var(--accent-text); }
 
 code, pre { font-family: var(--font-mono); }
 

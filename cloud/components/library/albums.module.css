@@ -37,7 +37,7 @@
 }
 .link:hover { color: var(--text); }
 .itemOn .link { color: var(--text); }
-.itemIcon { color: var(--ws-accent, var(--accent)); }
+.itemIcon { color: var(--ws-accent, var(--accent-text)); }
 .itemName { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .itemCount { color: var(--faint); font-size: var(--fs-caption); font-variant-numeric: tabular-nums; }
 
